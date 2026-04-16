@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SJSFI Library Scanner</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    
+
+    <link rel="stylesheet" href="assets/css/attendance.css">
+</head>
+<body>
+
+    <!-- Added Official Header -->
+    <header class="official-header">
+        <div class="school-branding">
+            <img class="school-logo" src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/80/ffffff/27ae60?text=SJSFI'">
+            
+            <div class="school-info-text">
+                <span class="chinese-name">三寶顏忠義中學</span>
+                <h1 class="school-name">SAINT JOSEPH SCHOOL FOUNDATION, INC.</h1>
+                <p class="school-address">Gov. Camins Avenue, Zamboanga City, Philippines | Tel: (062) 991-6675</p>
+            </div>
+        </div>
+
+        <div class="scanner-title-area">
+            <p class="scanner-label">Library Entrance Scanner</p>
+            <div class="live-clock-badge">
+                <i class='bx bx-time-five'></i>
+                <span id="liveClock">00:00:00 AM</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Removed the old .header div with the H1 and old live clock to prevent duplicates -->
+
+        <div class="scanner-container">
+            <div class="scanner-layout-wrapper">
+                
+                <div class="scanner-input-section">
+                    <i class='bx bx-barcode-reader scanner-icon'></i>
+                    <h2>Ready to Scan</h2>
+                    <p>Please tap your student ID card on the RFID scanner to record your library entry or exit.</p>
+                    
+                    <div id="archiveWarning" style="display: none; color: #e67e22; font-weight: bold; margin-bottom: 15px;"></div>
+                    <div id="scannerStatus" style="font-weight: bold; margin-bottom: 15px; color: var(--primary-color);"></div>
+
+                    <div class="scan-input-wrapper">
+                        <i class='bx bx-id-card'></i>
+                        <input type="password" id="scanCode" placeholder="......" autofocus autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="scanner-display-section">
+                    <div class="display-header">
+                        <i class="bx bx-history"></i> Recent Scan Record
+                    </div>
+                    
+                    <div id="displayArea">
+                        <div id="statusMessage"></div>
+                        
+                        <div id="scanResultContent" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                            <div class="modern-card" style="opacity: 0.6; box-shadow: none; border: 1px solid var(--border-color);">
+                                <div class="modern-card-img" style="display: flex; justify-content: center; align-items: center; background: #e2e8f0;">
+                                    <i class='bx bxs-image' style="font-size: 50px; color: #cbd5e1;"></i>
+                                </div>
+                                <div class="modern-card-body">
+                                    <div class="modern-card-header">
+                                        <div style="height: 24px; width: 60%; background: rgba(255,255,255,0.1); border-radius: 4px;"></div>
+                                        <div style="height: 24px; width: 25%; background: rgba(255,255,255,0.1); border-radius: 12px;"></div>
+                                    </div>
+                                    <div style="height: 12px; width: 100%; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 8px;"></div>
+                                    <div style="height: 12px; width: 80%; background: rgba(255,255,255,0.05); border-radius: 4px; margin-bottom: 24px;"></div>
+                                    <div class="modern-card-tags" style="margin-bottom: 0;">
+                                        <div style="height: 28px; width: 80px; background: rgba(255,255,255,0.05); border-radius: 20px;"></div>
+                                        <div style="height: 28px; width: 80px; background: rgba(255,255,255,0.05); border-radius: 20px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+
+    <script src="assets/js/attendance.js">
+    </script>
+</body>
+</html>

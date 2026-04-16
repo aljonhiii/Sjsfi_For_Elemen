@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports | SJSFI Library</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    
+
+    <link rel="stylesheet" href="assets/css/reports.css">
+</head>
+<body>
+
+
+    <!-- GLOBAL LOADING OVERLAY -->
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <h3 id="loading-text" style="margin-top: 20px; font-weight: 700; letter-spacing: 1px;">Processing...</h3>
+    </div>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="logo-circle">
+                <img id="sidebarLogo" src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/45/27ae60/ffffff?text=SJ'">
+            </div>
+            <div class="brand-text">
+                <span class="brand-title">SJSFI</span>
+                <span class="brand-subtitle">Library Attendance</span>
+            </div>
+        </div>
+        <nav>
+            <a href="attendance.html" class="menu-item"><i class='bx bx-scan'></i> Attendance Scanner</a>
+            <a href="manage.html" class="menu-item"><i class='bx bx-user-pin'></i> Student Roster</a>
+            <a href="reports.html" class="menu-item active"><i class='bx bx-bar-chart-alt-2'></i> Reports</a>
+            <a href="add-students.html" class="menu-item"><i class='bx bxs-user-detail'></i> Add Students</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div class="header">
+            <h1>Reports</h1>
+        </div>
+
+
+
+<div class="control-panel-card">
+    
+    <div class="control-section">
+        <h4 class="control-label">
+            <i class='bx bx-data'></i> Viewing School Year
+        </h4>
+        <button onclick="window.api.openLogFile()" style="background: #34495e; color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 800; font-size: 14px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px;">
+                <i class='bx bx-notepad'></i> View Error Logs
+            </button>
+        <div class="year-select-wrapper">
+            <i class='bx bx-calendar-event'></i>
+            <select id="archiveSelect" onchange="handleYearChange()">
+                <option value="current">Current Year (Live)</option>
+                </select>
+            <i class='bx bx-chevron-down'></i>
+        </div>
+    </div>
+
+    <div class="control-section">
+        <h4 class="control-label" style="color: var(--danger-color);">
+            <i class='bx bx-error-circle'></i> System Administration
+        </h4>
+        <!-- Unlock controls removed: input and button are now directly visible -->
+        <div class="danger-zone">
+            <input type="text" id="newYearInput" class="archive-input" placeholder="e.g. 2026_2027">
+            <button onclick="executeArchive()" class="archive-btn">
+                <i class='bx bx-archive-in'></i> Archive
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<div class="card">
+    <div class="card-header"><i class='bx bx-history'></i> Attendance Logs</div>
+    <p class="card-desc">View and export scan events for a specific date or date range.</p>
+    
+    <div class="controls-bar">
+        <input type="date" id="logStart">
+        <span style="font-weight: 700; font-size: 13px; color: var(--text-secondary);">to</span>
+        <input type="date" id="logEnd">
+        <button class="btn-view" onclick="loadLogs()"><i class='bx bx-search-alt'></i> View Logs</button>
+        
+        <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+            <select id="deptFilterLogs" class="dept-select" style="padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border-color); outline: none; font-weight: 600; color: var(--primary-dark); cursor: pointer; background: white;">
+                <option value="ALL">All Departments</option>
+                <option value="Elementary">Elementary </option>
+                <option value="VISITOR">Visitor</option>
+            </select>
+
+            <button class="btn-pdf" onclick="exportLogsPDF()">
+                <i class='bx bxs-file-pdf'></i> PDF
+            </button>
+        </div>
+    </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Student Name</th><th>Grade</th><th>Log Type</th><th>Time / Date</th></tr>
+                    </thead>
+                    <tbody id="logsTable">
+                        <tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-secondary);">Select date range and click View.</td></tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <span id="pageInfo">Showing 0 records</span>
+                    <div style="display:flex; gap: 5px;">
+                        <button id="prevBtn" class="page-btn" onclick="changePage(-1)" disabled>Prev</button>
+                        <button id="nextBtn" class="page-btn" onclick="changePage(1)" disabled>Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class='bx bx-calculator'></i> Time Summary</div>
+            <p class="card-desc">Total computed library hours per student.</p>
+            <div class="controls-bar">
+                <input type="date" id="sumStart">
+                <span style="font-weight: 700; font-size: 13px;">to</span>
+                <input type="date" id="sumEnd">
+                <button class="btn-view" onclick="loadSummary()">Compute</button>
+                
+                <button class="btn-pdf" onclick="exportSummaryPDF()"><i class='bx bxs-file-pdf'></i> PDF</button>
+
+            </div>
+            <div class="table-wrap">
+                <table id="fullSummaryTable">
+                    <thead>
+                        <tr><th>Student Name</th><th>Grade Level</th><th>Total Time</th></tr>
+                    </thead>
+                    <tbody id="summaryTable">
+                        <tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--text-secondary);">Select range and click Compute.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>
+
+
+
+<script src="assets/js/reports.js">
+
+</script>
+</body>
+</html>

@@ -1,0 +1,365 @@
+        /* === GLOBAL STYLES (Green Theme) === */
+        :root {
+            --bg-body: #f3faef; 
+            --bg-card: #ffffff;
+            --text-primary: #1b3b22; 
+            --text-secondary: #5c7a65; 
+            --primary-color: #27ae60; 
+            --primary-dark: #1e8449; 
+            --primary-light: #e8f8f0; 
+            --success-color: #00b894; 
+            --danger-color: #d63031;  
+            --border-color: #d1e8d8; 
+        }
+
+        * {
+            cursor: none !important;
+            
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            flex-direction: column; /* Added to stack header and main content vertically */
+
+            /* 👇 GHOST MODE 👇 */
+            user-select: none;           
+            -webkit-user-select: none;   
+            cursor: none;                
+            pointer-events: none;        
+        }
+
+        /* === PDF/OFFICIAL LETTERHEAD HEADER === */
+        .official-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            padding: 20px 30px;
+            /* Removed border-bottom: 3px solid var(--primary-dark); */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .school-branding {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .school-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+
+        .school-info-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chinese-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .school-name {
+            font-family: "Times New Roman", serif;
+            font-size: 24px;
+            font-weight: 900;
+            color: #000;
+            margin: 0;
+            letter-spacing: 0.5px;
+        }
+
+        .school-address {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin: 2px 0 0 0;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .scanner-title-area {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .scanner-label {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        .live-clock-badge {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* === MAIN CONTENT (Now Full Screen) === */
+        .main-content { 
+            flex: 1; 
+            padding: 20px 40px; 
+            overflow-y: hidden; 
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 26px; font-weight: 800; color: var(--primary-dark); }
+
+        /* === TWO-COLUMN KIOSK LAYOUT === */
+        .scanner-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 10px; 
+        }
+
+        .scanner-layout-wrapper {
+            background: var(--bg-card);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(39, 174, 96, 0.08);
+            width: 100%;
+            max-width: 950px; 
+            border: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr; 
+            min-height: 500px;
+            overflow: hidden; 
+        }
+
+        /* LEFT COLUMN */
+        .scanner-input-section {
+            padding: 30px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: #ffffff;
+        }
+
+        @keyframes pulse-soft {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .scanner-icon {
+            font-size: 75px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 6px rgba(39, 174, 96, 0.3));
+            animation: pulse-soft 2.5s infinite ease-in-out;
+            display: inline-block;
+        }
+
+        .scanner-input-section h2 { margin-top: 0; margin-bottom: 8px; color: var(--primary-dark); font-weight: 800; font-size: 28px; }
+        .scanner-input-section p { color: var(--text-secondary); margin-bottom: 35px; font-size: 15px; line-height: 1.5; }
+
+        .scan-input-wrapper { position: relative; width: 100%; }
+
+        input#scanCode {
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 24px;
+            padding: 20px 20px 20px 65px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            outline: none;
+            transition: all 0.3s;
+            font-family: monospace;
+            background-color: var(--bg-body);
+            letter-spacing: 8px; 
+            color: var(--primary-dark);
+            font-weight: bold;
+            pointer-events: auto; /* Ensure input remains interactive despite body pointer-events: none */
+        }
+
+        input#scanCode:focus {
+            border-color: var(--primary-color);
+            background-color: white;
+            box-shadow: 0 0 0 6px rgba(39, 174, 96, 0.15);
+        }
+
+        .scan-input-wrapper i {
+            position: absolute;
+            left: 22px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 30px;
+            color: var(--primary-color);
+        }
+
+        /* RIGHT COLUMN */
+        .scanner-display-section {
+            padding: 40px;
+            background: var(--primary-light); 
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .display-header {
+            text-align: center;
+            color: var(--text-secondary);
+            font-weight: 800;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        #displayArea {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 16px;
+            background: transparent; 
+            border: none; 
+            padding: 10px;
+            transition: all 0.3s;
+        }
+
+        /* === ZAMBOGUIDE OVERLAY CARD STYLE === */
+        .modern-card {
+            position: relative; 
+            background: var(--bg-body);
+            border-radius: 20px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 320px; 
+            height: 400px; 
+            color: #ffffff;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            text-align: left;
+        }
+
+        .modern-card-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; 
+            object-fit: cover;
+            z-index: 1; 
+        }
+
+        .modern-card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 80px 20px 20px 20px; 
+            background: linear-gradient(to top, rgba(30, 41, 59, 0.95) 0%, rgba(30, 41, 59, 0.6) 50%, rgba(30, 41, 59, 0) 100%);
+            z-index: 2; 
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .modern-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 5px;
+        }
+
+        .modern-card-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin: 0;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.8); 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .modern-card-badge {
+            padding: 20px 20px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 50px;
+            color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .modern-tag.success-in { 
+            background: var(--success-color); 
+            color: white; 
+            box-shadow: 0 2px 8px rgba(0, 184, 148, 0.4);
+        }
+        
+        .modern-tag.success-out { 
+            background: var(--danger-color); 
+            color: white; 
+            box-shadow: 0 2px 8px rgba(214, 48, 49, 0.4);
+        }
+
+        .modern-card-desc {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .modern-card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+        }
+
+        .modern-tag {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px); 
+            color: #ffffff;
+            padding: 6px 16px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #statusMessage { height: 26px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center;}
+        
+        .scan-error { color: var(--danger-color); font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 8px; text-align: center;}
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-15px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }

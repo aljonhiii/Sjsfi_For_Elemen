@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add New Student | SJSFI Library</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    
+
+    <link rel="stylesheet" href="assets/css/add-students.css">
+</head>
+<body>
+
+
+        <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <h3 id="loading-text" style="margin-top: 20px; font-weight: 700; letter-spacing: 1px;">Processing...</h3>
+    </div>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="logo-circle">
+                <img src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/50/27ae60/ffffff?text=SJ'">
+            </div>
+            <div class="brand-text">
+                <span class="brand-title">SJSFI</span>
+                <span class="brand-subtitle">Library Attendance</span>
+            </div>
+        </div>
+        
+        <nav>
+            <a href="attendance.html" class="menu-item"><i class='bx bx-scan'></i> Attendance Scanner</a>
+            <a href="manage.html" class="menu-item"><i class='bx bx-user-pin'></i> Student Roster</a>
+            <a href="reports.html" class="menu-item"><i class='bx bx-bar-chart-alt-2'></i> Reports</a>
+            <a href="add-students.html" class="menu-item active"><i class='bx bxs-user-detail'></i> Add Students</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div class="header-container">
+            <a href="manage.html" class="btn-back">
+                <i class='bx bx-left-arrow-alt' style="font-size: 20px;"></i> Back to Student Roster
+            </a>
+            <button onclick="handleImportCSV()" class="btn-import">
+                <i class='bx bx-upload'></i> Import CSV
+            </button>
+        </div>
+
+        <div class="card">
+            <h2><i class='bx bx-user-plus'></i> Enroll New Student</h2>
+            <p>Register a student to the library database to enable RFID scanning.</p>
+            
+            <form id="addForm">
+                <div class="form-group">
+                    <label>Student ID / RFID Code (10 Digits)</label>
+                    <input type="text" id="code" placeholder="" maxlength="10" autocomplete="off">
+                    <span id="codeError" class="error-text"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="name" placeholder="" autocomplete="off">
+                    <span id="nameError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Grade Level</label>
+                    <select id="grade">
+                        <option value="" disabled selected>Select Grade</option>
+                        <option value="1">Grade 1</option><option value="2">Grade 2</option><option value="3">Grade 3</option>
+                        <option value="4">Grade 4</option><option value="5">Grade 5</option><option value="6">Grade 6</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Profile Picture (Optional)</label>
+                    <div class="photo-upload-container">
+                        <div class="preview-circle">
+                            <i id="placeholderIcon" class='bx bx-user'></i>
+                            <img id="previewImage" src="">
+                        </div>
+                        <div class="upload-input-area">
+                            <input type="file" id="pf" accept="image/png, image/jpeg, image/jpg" style="width: 100%; cursor: pointer;">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="saveBtn">Save Student Record</button>
+            </form>
+        </div>
+    </main>
+
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalIcon" class="modal-icon"></div>
+            <h3 id="modalTitle">Title</h3>
+            <p id="modalMessage">Message goes here.</p>
+            <button id="modalBtn" onclick="closeModal()" class="btn-modal">Done</button>
+        </div>
+    </div>
+
+<script src="assets/js/add-students.js">
+    </script>
+</body>
+</html>

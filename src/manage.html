@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Roster | SJSFI Library</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    
+    
+    <link rel="stylesheet" href="assets/css/manage.css">
+</head>
+<body>
+
+
+        <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <h3 id="loading-text" style="margin-top: 20px; font-weight: 700; letter-spacing: 1px;">Processing...</h3>
+    </div>
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="logo-circle"><img src="assets/images/sjsfi_school_logo.png" onerror="this.src='https://via.placeholder.com/45'"></div>
+            <div class="brand-text">
+                <span class="brand-title">SJSFI</span>
+                <span class="brand-subtitle">Library Attendance</span>
+            </div>
+        </div>
+        <nav>
+            <a href="attendance.html" class="menu-item"><i class='bx bx-scan'></i> Attendance Scanner</a>
+            <a href="manage.html" class="menu-item active"><i class='bx bx-user-pin'></i> Student Roster</a>
+            <a href="reports.html" class="menu-item"><i class='bx bx-bar-chart-alt-2'></i> Reports</a>
+            <a href="add-students.html" class="menu-item"><i class='bx bxs-user-detail'></i>Add Students</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <div class="header">
+            <h1>Student Roster</h1>
+            <div class="controls-bar">
+                <div class="search-wrapper">
+                    <i class='bx bx-search'></i>
+                    <input type="text" id="searchInput" placeholder="Search by name or ID..." oninput="applyFilters()">
+                </div>
+                <div class="filter-wrapper">
+                    <select id="gradeFilter" onchange="applyFilters()">
+                        <option value="all">All Grades</option>
+                        <option value="1">Grade 1</option><option value="2">Grade 2</option><option value="3">Grade 3</option>
+                        <option value="4">Grade 4</option><option value="5">Grade 5</option><option value="6">Grade 6</option>
+                    </select>
+                </div>
+                <div style="margin-left: auto;">
+                    <button onclick="handleExportCSV()" class="btn-export">
+                        <i class='bx bx-export'></i> Export CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>ID / Code</th>
+                            <th>Grade Level</th>
+                            <th>Date Registered</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTable"></tbody>
+                </table>
+            </div>
+<div class="footer-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+    
+    <div class="footer-left">
+        <button id="toggleArchiveBtn" class="page-btn" onclick="toggleArchiveView()" style="display: flex; align-items: center; gap: 5px;">
+            <i class='bx bx-trash'></i> View Recycle Bin
+        </button>
+    </div>
+
+    <div class="pagination-container" style="margin-top: 0; display: flex; align-items: center; gap: 15px;">
+        <div class="page-info" id="pageInfo" style="margin: 0;">Showing 0 records</div>
+        <div class="page-controls">
+            <button class="page-btn" id="prevBtn" onclick="changePage(-1)"><i class='bx bx-chevron-left'></i> Prev</button>
+            <button class="page-btn" id="nextBtn" onclick="changePage(1)">Next <i class='bx bx-chevron-right'></i></button>
+        </div>
+    </div>
+</div>
+        </div>
+
+        <div id="editModal" class="modal-overlay">
+            <div class="modal-content">
+                <button class="close-modal" onclick="closeEditModal()"><i class='bx bx-x'></i></button>
+                <div class="modal-header"><h2>Edit Student Record</h2></div>
+                <input type="hidden" id="editId">
+                
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="editName" class="form-control">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Grade Level</label>
+                    <select id="editGrade" class="form-control">
+
+                        <option value="1">Grade 1</option><option value="2">Grade 2</option><option value="3">Grade 3</option>
+                        <option value="4">Grade 4</option><option value="5">Grade 5</option><option value="6">Grade 6</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Update Profile Picture</label>
+                    <div style="display: flex; align-items: center; gap: 15px; background: #fafdfb; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color);">
+                        <div id="editPreviewContainer" style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; background: #ddd; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                            <img id="editImagePreview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                            <div id="editPlaceholder" style="color: #888;"><i class='bx bx-user' style="font-size: 24px;"></i></div>
+                        </div>
+                        <input type="file" id="editPhotoInput" accept="image/*" style="font-size: 11px; width: 100%;">
+                    </div>
+                </div>
+
+                <button onclick="saveEdit()" class="btn-save">Save Changes</button>
+            </div>
+        </div>   
+    </main>
+
+<script src="assets/js/manage.js">
+
+    </script>
+</body>
+</html>
