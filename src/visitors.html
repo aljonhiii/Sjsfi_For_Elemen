@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <title>Visitor Registration | SJSFI Library</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    
-    
     <link rel="stylesheet" href="assets/css/visitors.css">
 </head>
 <body>
@@ -15,24 +13,9 @@
         <p id="loaderText" style="margin-top: 15px; font-weight: 800; color: var(--primary-dark); font-family: sans-serif;">Processing Request...</p>
     </div>
 
-    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
-    <div class="drawer" id="sideDrawer">
-        <div class="drawer-header">
-            <h3 style="margin:0; color:var(--primary-dark); font-weight: 900;"><i class='bx bx-group'></i> Active Visitors</h3>
-            <button onclick="loadActiveVisitors()" style="background:var(--primary-light); border:none; color:var(--primary-color); cursor:pointer; width: 35px; height: 35px; border-radius: 8px;"><i class='bx bx-refresh' style="font-size:20px;"></i></button>
-        </div>
-        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 25px; font-weight: 600;">Select a visitor to log Time Out:</p>
-        
-        <div id="activeVisitorsContainer" style="overflow-y: auto; flex: 1; padding-right: 5px;"></div>
-
-        <button onclick="toggleDrawer()" style="margin-top: 20px; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); background: #f8f9fa; cursor: pointer; font-weight: 800; color: var(--text-secondary);">
-            Close Panel
-        </button>
-    </div>
-
     <header class="official-header">
         <div class="school-branding">
-            <img class="school-logo" src="assets/images/sjsfi_school_logo.png "alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/80/ffffff/27ae60?text=SJSFI'">
+            <img class="school-logo" src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/80/ffffff/27ae60?text=SJSFI'">
             
             <div class="school-info-text">
                 <span class="chinese-name">三寶顏忠義中學</span>
@@ -45,19 +28,23 @@
             <button onclick="window.location.href='attendance.html'" style="background:var(--primary-light); border:none; padding:10px 18px; border-radius:10px; font-weight:bold; color:var(--primary-dark); cursor:pointer; display: flex; align-items: center; gap: 8px;">
                 <i class='bx bx-arrow-back'></i> Back
             </button>
-            <div class="burger-btn" onclick="toggleDrawer()" title="Active Visitors">
-                <i class='bx bx-menu-alt-right'></i>
-            </div>
         </div>
     </header>
 
     <main class="main-content">
         <div class="visitor-card">
-            <div class="card-header">
-                <h2 class="card-title"><i class='bx bx-user-plus'></i> Visitor Entry</h2>
-                <div class="count-input-wrapper">
-                    <label>Visitor Count:</label>
-                    <input type="number" id="visitorCount" value="1" min="1" max="15" oninput="renderVisitorForms()">
+            <div class="card-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                <h2 class="card-title" style="margin: 0;"><i class='bx bx-user-plus'></i> Visitor Entry</h2>
+                
+                <div style="display: flex; gap: 15px;">
+                    <div class="count-input-wrapper">
+                        <label>Scanned Badge:</label>
+                        <input type="text" id="visitorGroupId" placeholder="e.g. 0002075624" required autocomplete="off" style="width: 140px; text-transform: uppercase;">
+                    </div>
+                    <div class="count-input-wrapper">
+                        <label>Visitor Count:</label>
+                        <input type="number" id="visitorCount" value="1" min="1" max="15" oninput="renderVisitorForms()">
+                    </div>
                 </div>
             </div>
 
@@ -70,14 +57,8 @@
                 <a href="attendance.html" class="btn-cancel">Discard & Exit</a>
             </div>
         </div>
-        
-        <p style="margin-top: 30px; color: var(--text-secondary); font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-            <span class="pulse-red"></span> Monitor active visitors in the side panel.
-        </p>
     </main>
 
-    <script src="assets/js/visitors.js">
-
-    </script>
+    <script src="assets/js/visitors.js"></script>
 </body>
-</html>
+</html> 

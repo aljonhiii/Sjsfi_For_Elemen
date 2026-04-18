@@ -1,5 +1,4 @@
-
-        const timeInSound = new Audio('assets/spelling-bee.mp3');
+const timeInSound = new Audio('assets/spelling-bee.mp3');
         const timeOutSound = new Audio('assets/times-up.mp3');
         const errorSound = new Audio('assets/perfect-fart.mp3');
         
@@ -8,13 +7,7 @@
             "0002102614",
             "0002075610",
             "0002075591"
-            
-                                             ];
-
-
-        const visitor_library_id_access = [
-            "0002075624"	
-        ];                                     
+        ];
 
         // Live Clock logic
         function updateClock() {
@@ -34,8 +27,7 @@
         let countdownInterval;
         let resetTimer; 
 
-        // 🧠 THE MEMORY: Airbnb Skeleton layout
-    // 🧠 THE MEMORY: A sleek outline waiting for an ID
+        // 🧠 THE MEMORY: A sleek outline waiting for an ID
         let lastSuccessfulProfile = `
             <div class="modern-card" style="opacity: 0.5; border: 2px dashed var(--border-color); background: transparent; display: flex; justify-content: center; align-items: center; flex-direction: column;">
                 <i class='bx bxs-user-detail' style="font-size: 60px; color: var(--text-secondary); opacity: 0.5; margin-bottom: 10px;"></i>
@@ -52,49 +44,42 @@
 
                 if (!code) return;
 
-
-               // 🔓 INTERCEPT: CHECK IF IT IS THE MASTER KEY
-// 🔓 INTERCEPT: CHECK IF IT IS THE MASTER KEY
+                // ==========================================================
+                // 🔓 INTERCEPT: CHECK IF IT IS THE MASTER ADMIN KEY
+                // ==========================================================
                 if (librarian_admin_rfid_access.includes(code)) {
                     console.log("🔓 Admin Master Key Scanned!");
                     
-                    // 1. Lock the scanner input
                     isScannerLocked = true;
 
-                    // 2. Play success sound (if defined)
                     if (typeof timeInSound !== 'undefined') {
                         timeInSound.currentTime = 0;
                         timeInSound.play().catch(() => {});
                     }
 
-                    // 3. Create the Full-Screen Frosted Glass Overlay dynamically
                     const fullscreenLoader = document.createElement('div');
                     fullscreenLoader.style.position = 'fixed';
                     fullscreenLoader.style.top = '0';
                     fullscreenLoader.style.left = '0';
                     fullscreenLoader.style.width = '100vw';
                     fullscreenLoader.style.height = '100vh';
-                    fullscreenLoader.style.backgroundColor = 'rgba(255, 255, 255, 0.75)'; // Transparent white
-                    fullscreenLoader.style.backdropFilter = 'blur(10px)'; // Frosted glass blur
+                    fullscreenLoader.style.backgroundColor = 'rgba(255, 255, 255, 0.75)'; 
+                    fullscreenLoader.style.backdropFilter = 'blur(10px)'; 
                     fullscreenLoader.style.webkitBackdropFilter = 'blur(10px)';
                     fullscreenLoader.style.display = 'flex';
                     fullscreenLoader.style.justifyContent = 'center';
                     fullscreenLoader.style.alignItems = 'center';
-                    fullscreenLoader.style.zIndex = '9999'; // On top of everything
+                    fullscreenLoader.style.zIndex = '9999'; 
                     fullscreenLoader.style.fontFamily = '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif';
                     fullscreenLoader.style.animation = 'fadeIn 0.3s ease-out';
                     
-                    // 4. INJECT THE PREMIUM UI (The code you just pasted!)
                     fullscreenLoader.innerHTML = `
                         <style>
-                            /* Makes the logo pulse like a high-tech security scan */
                             @keyframes premium-pulse {
                                 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.3); }
                                 70% { transform: scale(1.05); box-shadow: 0 0 0 25px rgba(39, 174, 96, 0); }
                                 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
                             }
-                            
-                            /* Animates the "dot dot dot" on the text */
                             .loading-ellipsis::after {
                                 content: '.';
                                 animation: ellipsis 1.5s steps(4, end) infinite;
@@ -106,22 +91,12 @@
                                 75%, 100% { content: '...'; }
                             }
                         </style>
-                        
-                        <!-- THE PREMIUM FLOATING CARD -->
                         <div style="background: white; padding: 50px 80px; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; align-items: center; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease-out;">
-                            
-                            <!-- THE LOGO WITH PULSE GLOW -->
                             <div style="width: 110px; height: 110px; border-radius: 50%; background: white; display: flex; justify-content: center; align-items: center; margin-bottom: 30px; animation: premium-pulse 2s infinite;">
                                 <img src="assets/images/sjsfi_school_logo.png" onerror="this.src='https://via.placeholder.com/80/27ae60/ffffff?text=SJ'" style="width: 85px; height: 85px; object-fit: contain;">
                             </div>
-
-                            <!-- THE DOTTED SPINNER -->
                             <i class='bx bx-loader bx-spin' style="font-size: 55px; color: var(--primary-color); margin-bottom: 20px; filter: drop-shadow(0 4px 6px rgba(39, 174, 96, 0.3));"></i>
-                            
-                            <!-- THE MAIN HEADING -->
                             <h1 style="font-size: 38px; font-weight: 900; margin: 0 0 12px 0; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 1px;">Access Granted</h1>
-                            
-                            <!-- THE ANIMATED DOT DOT DOT TEXT -->
                             <p style="font-size: 19px; font-weight: 600; color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 8px;">
                                 <i class='bx bx-shield-quarter' style="font-size: 24px; color: var(--primary-color);"></i>
                                 Redirecting to Admin<span class="loading-ellipsis" style="width: 20px; text-align: left; display: inline-block;"></span>
@@ -129,100 +104,15 @@
                         </div>
                     `;
  
-                    // 5. Attach it to the screen!
                     document.body.appendChild(fullscreenLoader);
 
-                    // 6. Wait for 2.5 seconds, then redirect!
                     setTimeout(() => {
                         window.location.href = 'reports.html'; 
                     }, 2500);
 
-                    return; // 🛑 CRITICAL: Stop the function here so it doesn't log the admin as a student!
+                    return; 
                 }
-
-
-                if (visitor_library_id_access.includes(code)) {
-                    console.log("🧑‍🤝‍🧑 Visitor Pass Scanned!");
-                    
-                    isScannerLocked = true;
-                    
-                    if (typeof timeInSound !== 'undefined') {
-                        timeInSound.currentTime = 0;
-                        timeInSound.play().catch(() => {});
-                    }
-
-                    // 3. Create the Full-Screen Frosted Glass Overlay dynamically
-                    const fullscreenLoader = document.createElement('div');
-                    fullscreenLoader.style.position = 'fixed';
-                    fullscreenLoader.style.top = '0';
-                    fullscreenLoader.style.left = '0';
-                    fullscreenLoader.style.width = '100vw';
-                    fullscreenLoader.style.height = '100vh';
-                    fullscreenLoader.style.backgroundColor = 'rgba(255, 255, 255, 0.50)'; // Transparent white
-                    fullscreenLoader.style.backdropFilter = 'blur(10px)'; // Frosted glass blur
-                    fullscreenLoader.style.webkitBackdropFilter = 'blur(3px)';
-                    fullscreenLoader.style.display = 'flex';
-                    fullscreenLoader.style.justifyContent = 'center';
-                    fullscreenLoader.style.alignItems = 'center';
-                    fullscreenLoader.style.zIndex = '9999'; // On top of everything
-                    fullscreenLoader.style.fontFamily = '"Arial, Sans-Serif"';
-                    fullscreenLoader.style.animation = 'fadeIn 0.3s ease-out';
-                    
-                    // 4. INJECT THE PREMIUM UI (The code you just pasted!)
-                    fullscreenLoader.innerHTML = `
-                        <style>
-                            /* Makes the logo pulse like a high-tech security scan */
-                            @keyframes premium-pulse {
-                                0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.3); }
-                                70% { transform: scale(1.05); box-shadow: 0 0 0 25px rgba(39, 174, 96, 0); }
-                                100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
-                            }
-                            
-                            /* Animates the "dot dot dot" on the text */
-                            .loading-ellipsis::after {
-                                content: '.';
-                                animation: ellipsis 1.5s steps(4, end) infinite;
-                            }
-                            @keyframes ellipsis {
-                                0% { content: ''; }
-                                25% { content: '.'; }
-                                50% { content: '..'; }
-                                75%, 100% { content: '...'; }
-                            }
-                        </style>
-                        
-                        <!-- THE PREMIUM FLOATING CARD -->
-                        <div style="background: white; padding: 50px 80px; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; align-items: center; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease-out;">
-                            
-                            <!-- THE LOGO WITH PULSE GLOW -->
-                            <div style="width: 110px; height: 110px; border-radius: 50%; background: white; display: flex; justify-content: center; align-items: center; margin-bottom: 30px; animation: premium-pulse 2s infinite;">
-                                <img src="302020444_491445399653674_4531561179769409846_n.png" onerror="this.src='https://via.placeholder.com/80/27ae60/ffffff?text=SJ'" style="width: 85px; height: 85px; object-fit: contain;">
-                            </div>
-
-                            <!-- THE DOTTED SPINNER -->
-                            <i class='bx bx-loader bx-spin' style="font-size: 55px; color: var(--primary-color); margin-bottom: 20px; filter: drop-shadow(0 4px 6px rgba(39, 174, 96, 0.3));"></i>
-                            
-                            <!-- THE MAIN HEADING -->
-                            <h1 style="font-size: 38px; font-weight: 900; margin: 0 0 12px 0; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 1px;">Access Granted</h1>
-                            
-                            <!-- THE ANIMATED DOT DOT DOT TEXT -->
-                            <p style="font-size: 19px; font-weight: 600; color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 8px;">
-                                <i class='bx bx-shield-quarter' style="font-size: 24px; color: var(--primary-color);"></i>
-                                Please Wait<span class="loading-ellipsis" style="width: 20px; text-align: left; display: inline-block;"></span>
-                            </p>
-                        </div>
-                    `;
-
-                    // 5. Attach it to the screen!
-                    document.body.appendChild(fullscreenLoader);
-                    
-                    // Redirect to the new Visitor Registration Page
-                    setTimeout(() => {
-                        window.location.href = 'visitors.html'; 
-                    }, 1000);
-
-                    return; // 🛑 CRITICAL: Stop the function here so it doesn't log a student!
-                }
+                // ==========================================================
 
                 if (code.length > 10) code = code.substring(0, 10);
 
@@ -250,6 +140,7 @@
                 }, 1000);
 
                 try {
+                    // Send to backend! Let main.js decide what to do!
                     const result = await window.api.processAttendance(code);
 
                     if (result.success) {
@@ -265,41 +156,173 @@
 
                         statusMessage.innerHTML = `<span style="color: var(--success-color); font-weight: bold;"><i class='bx bx-check-circle'></i> Scan Successful!</span>`;
                         
-                        const picSrc = result.profilePic ? result.profilePic : 'https://via.placeholder.com/360x240/2d6a4f/ffffff?text=No+Photo';
+                        const picSrc = result.profilePic ? result.profilePic : '';
                         const badgeClass = isTimeIn ? 'success-in' : 'success-out';
                         
-const timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        const timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                         const dateString = new Date().toLocaleDateString();
 
-const newProfileHTML = `
-                            <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-                                <img class="modern-card-img" src="${picSrc}" onerror="this.src='https://via.placeholder.com/320x400/1e293b/ffffff?text=No+Photo'">
-                                
-                                <div class="modern-card-overlay">
-                                    <div class="modern-card-header">
-                                        <h2 class="modern-card-title">${result.studentName}</h2>
-                                    </div>
-                                    
-                                    <p class="modern-card-desc">
-                                        Grade Level: <strong>${result.grade}</strong>
-                                    </p>
-                                    
-                                    <div class="modern-card-tags">
-                                        <div class="modern-tag ${badgeClass}">
-                                            <i class='bx bx-scan'></i> ${result.logType}
-                                        </div>
-                                        
-                                        <div class="modern-tag"><i class='bx bx-time'></i> ${timeString}</div>
-                                        <div class="modern-tag"><i class='bx bx-calendar'></i> ${dateString}</div>
-                                    </div>
-                                </div>
-                            </div>
+                        // ==========================================================
+                        // 🌟 DYNAMIC DESCRIPTION HTML (Handles standard grades OR visitor names!)
+                        // ==========================================================
+                        let descHTML = `
+                            <p class="modern-card-desc">
+                                Grade Level: <strong>${result.grade}</strong>
+                            </p>
                         `;
 
+let newProfileHTML = '';
+
+                        // ==========================================================
+                        // 🌟 SPLIT UI LOGIC: DEDICATED VISITOR TEMPLATE VS STUDENT
+                        // ==========================================================
+// ==========================================================
+                        // 🌟 SPLIT UI LOGIC: DEDICATED VISITOR TEMPLATE VS STUDENT
+                        // ==========================================================
+                        if (result.visitorNames && result.visitorNames.length > 0) {
+                            
+                            // 🎫 1. COMPACT VISITOR LIST: Smaller text, smaller avatars, tighter spacing
+                            const namesList = result.visitorNames.map(n => 
+                                `<div style="font-size: 14px; font-weight: 700; color: #1e293b; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                                    <div style="background: #cbd5e1; border-radius: 50%; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center;">
+                                        <i class='bx bxs-user' style="color: white; font-size: 14px;"></i>
+                                    </div>
+                                    ${n}
+                                </div>`
+                            ).join('');
+                            
+                            // 🎫 2. COMPACT GREEN VISITOR CARD: Light green gradient, reduced padding, set max-width
+                            newProfileHTML = `
+                                <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; padding: 0; max-width: 340px; margin: 0 auto;">
+                                    
+                                    <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 20px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; width: 100%;">
+                                        <div style="background: rgba(255,255,255,0.25); padding: 4px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-top: 8px; letter-spacing: 1px;">
+                                            RFID: ${result.studentCode}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="modern-card-overlay" style="padding: 15px 20px; width: 100%; box-sizing: border-box;">
+                                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 12px; text-align: left; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
+                                            Logged Out Guests (${result.visitorNames.length})
+                                        </div>
+                                        
+                                        <div style="width: 100%; max-height: 160px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
+                                            ${namesList}
+                                        </div>
+                                        
+                                        <div class="modern-card-tags" style="justify-content: center; gap: 8px;">
+                                            <div class="modern-tag ${badgeClass}" style="padding: 4px 10px; font-size: 11px;">
+                                                <i class='bx bx-scan'></i> ${result.logType}
+                                            </div>
+                                            <div class="modern-tag" style="padding: 4px 10px; font-size: 11px;"><i class='bx bx-time'></i> ${timeString}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                        } else {
+                            
+                            // 🎓 STANDARD STUDENT TEMPLATE (Stays exactly the same)
+                            newProfileHTML = `
+                                <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                                    <img class="modern-card-img" src="${picSrc}" onerror="this.src='https://via.placeholder.com/320x400/1e293b/ffffff?text=No+Photo'">
+                                    
+                                    <div class="modern-card-overlay">
+                                        <div class="modern-card-header">
+                                            <h2 class="modern-card-title">${result.studentName}</h2>
+                                        </div>
+                                        
+                                        <p class="modern-card-desc">
+                                            Grade Level: <strong>${result.grade}</strong>
+                                        </p>
+                                        
+                                        <div class="modern-card-tags">
+                                            <div class="modern-tag ${badgeClass}">
+                                                <i class='bx bx-scan'></i> ${result.logType}
+                                            </div>
+                                            
+                                            <div class="modern-tag"><i class='bx bx-time'></i> ${timeString}</div>
+                                            <div class="modern-tag"><i class='bx bx-calendar'></i> ${dateString}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
                         scanResultContent.innerHTML = newProfileHTML;
-                        lastSuccessfulProfile = newProfileHTML; 
+                        lastSuccessfulProfile = newProfileHTML;
 
                     } else {
+                        // ==============================================================
+                        // 🌟 THE NEW MASTER VISITOR TELEPORT CATCHER
+                        // ==============================================================
+                        if (result.action === "REGISTER_VISITOR") {
+                            console.log("Visitor Pass Recognized! Redirecting...");
+                            
+                            isScannerLocked = true;
+                            
+                            if (typeof timeInSound !== 'undefined') {
+                                timeInSound.currentTime = 0;
+                                timeInSound.play().catch(() => {});
+                            }
+
+                            const fullscreenLoader = document.createElement('div');
+                            fullscreenLoader.style.position = 'fixed';
+                            fullscreenLoader.style.top = '0';
+                            fullscreenLoader.style.left = '0';
+                            fullscreenLoader.style.width = '100vw';
+                            fullscreenLoader.style.height = '100vh';
+                            fullscreenLoader.style.backgroundColor = 'rgba(255, 255, 255, 0.50)'; 
+                            fullscreenLoader.style.backdropFilter = 'blur(10px)'; 
+                            fullscreenLoader.style.webkitBackdropFilter = 'blur(3px)';
+                            fullscreenLoader.style.display = 'flex';
+                            fullscreenLoader.style.justifyContent = 'center';
+                            fullscreenLoader.style.alignItems = 'center';
+                            fullscreenLoader.style.zIndex = '9999'; 
+                            fullscreenLoader.style.fontFamily = '"Arial, Sans-Serif"';
+                            fullscreenLoader.style.animation = 'fadeIn 0.3s ease-out';
+                            
+                            fullscreenLoader.innerHTML = `
+                                <style>
+                                    @keyframes premium-pulse {
+                                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.3); }
+                                        70% { transform: scale(1.05); box-shadow: 0 0 0 25px rgba(39, 174, 96, 0); }
+                                        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
+                                    }
+                                    .loading-ellipsis::after {
+                                        content: '.';
+                                        animation: ellipsis 1.5s steps(4, end) infinite;
+                                    }
+                                    @keyframes ellipsis {
+                                        0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75%, 100% { content: '...'; }
+                                    }
+                                </style>
+                                <div style="background: white; padding: 50px 80px; border-radius: 30px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; align-items: center; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease-out;">
+                                    <div style="width: 110px; height: 110px; border-radius: 50%; background: white; display: flex; justify-content: center; align-items: center; margin-bottom: 30px; animation: premium-pulse 2s infinite;">
+                                        <img src="assets/images/sjsfi_school_logo.png" onerror="this.src='https://via.placeholder.com/80/27ae60/ffffff?text=SJ'" style="width: 85px; height: 85px; object-fit: contain;">
+                                    </div>
+                                    <i class='bx bx-loader bx-spin' style="font-size: 55px; color: var(--primary-color); margin-bottom: 20px; filter: drop-shadow(0 4px 6px rgba(39, 174, 96, 0.3));"></i>
+                                    <h1 style="font-size: 38px; font-weight: 900; margin: 0 0 12px 0; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 1px;">Access Granted</h1>
+                                    <p style="font-size: 19px; font-weight: 600; color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 8px;">
+                                        <i class='bx bx-shield-quarter' style="font-size: 24px; color: var(--primary-color);"></i>
+                                        Preparing Visitor Pass<span class="loading-ellipsis" style="width: 20px; text-align: left; display: inline-block;"></span>
+                                    </p>
+                                </div>
+                            `;
+
+                            document.body.appendChild(fullscreenLoader);
+                            
+                            // 🌟 REDIRECT TO VISITORS.HTML AND PASS THE BADGE CODE
+                            setTimeout(() => {
+                                window.location.href = `visitors.html?badge=${result.badgeCode}`; 
+                            }, 1000);
+
+                            return; // STOP EXECUTION HERE
+                        }
+
+                        // ==============================================================
+                        // ❌ NORMAL FAILED SCAN LOGIC (Unregistered cards)
+                        // ==============================================================
                         errorSound.currentTime = 0;
                         errorSound.play().catch(() => {});
 

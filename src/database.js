@@ -29,32 +29,42 @@ function initLiveDb() {
     
     liveDb.pragma('journal_mode = WAL'); // Speeds up the scanner significantly
 
+// 👨‍🎓 THE STUDENTS TABLE (Kept exactly as you designed it)
 liveDb.exec(`
-        CREATE TABLE IF NOT EXISTS students (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_code TEXT UNIQUE,
-            full_name TEXT,
-            sex TEXT, 
-            grade_level TEXT,
-            profile_pic TEXT, 
-            status INTEGER DEFAULT 1, 
-            addedAt TEXT,
-            deletedAt TEXT
-        );
-    `);
+    CREATE TABLE IF NOT EXISTS students (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_code TEXT UNIQUE,
+        full_name TEXT,
+        sex TEXT, 
+        grade_level TEXT,
+        profile_pic TEXT, 
+        status INTEGER DEFAULT 1, 
+        addedAt TEXT,
+        deletedAt TEXT
+    );
+`);
 
-    // 🗄️ THE ATTENDANCE LOGS TABLE (Upgraded for Visitors!)
-    liveDb.exec(`
-        CREATE TABLE IF NOT EXISTS attendance_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_id INTEGER,                      
-            user_type TEXT DEFAULT 'STUDENT',        
-            visitor_name TEXT,                       
-            log_type TEXT,                           
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(student_id) REFERENCES students(id)
-        );
-    `);
+// ⏱️ THE STUDENT LOGS TABLE (Strictly for RFID taps)
+liveDb.exec(`
+    CREATE TABLE IF NOT EXISTS student_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INTEGER, 
+        log_type TEXT, 
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(student_id) REFERENCES students(id)
+    );
+`);
+
+// 👋 THE VISITOR LOGS TABLE (Strictly for manual sign-ins)
+liveDb.exec(`
+    CREATE TABLE IF NOT EXISTS visitor_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        badge_code TEXT,
+        visitor_name TEXT, 
+        log_type TEXT, 
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+`);
 }
 
 // --- 2. INITIALIZE REPORT DB (VIEWER) ---

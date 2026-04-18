@@ -143,13 +143,12 @@ app.on('window-all-closed', () => {
 ipcMain.handle('process-attendance', async (event, code) => {
     if (dbManager.getIsArchiving()) return { success: false, error: "System is archiving. Please wait." };
 
-
     if (activeYearFile !== 'current') {
         console.log("❌ SCAN BLOCKED: System is viewing an archive.");
         return { success: false, error: "Can't scan while viewing an archived school year. Please switch back to Current Year." };
     }
 
-try {
+    try {
         const db = dbManager.getReportDb(); 
         const input = code.trim(); // Clean the input
 
@@ -159,32 +158,53 @@ try {
         // ==========================================================
         // 🌟 STEP 1.5: VISITOR CHECKOUT INTERCEPT 🌟
         // ==========================================================
-        // We check if this "input" matches a visitor currently inside
-        const activeVisitor = db.prepare(`
-            SELECT visitor_name, log_type 
-            FROM attendance_logs 
-            WHERE user_type = 'VISITOR' 
-            AND visitor_name COLLATE NOCASE = ? 
+        // Fix: We now check the badge_code column instead of the visitor_name!
+        const latestBadgeLog = db.prepare(`
+            SELECT log_type 
+            FROM visitor_logs 
+            WHERE badge_code COLLATE NOCASE = ? 
             AND date(timestamp, 'localtime') = date('now', 'localtime')
             ORDER BY id DESC LIMIT 1
         `).get(input);
 
-        // If we found a visitor and their last action today was 'TIME IN', log them OUT
-        if (activeVisitor && activeVisitor.log_type === 'TIME IN') {
-            console.log(`✅ VISITOR MATCH: Logging out ${activeVisitor.visitor_name}`);
+        // If the badge is currently checked IN, intercept and log them OUT!
+        if (latestBadgeLog && latestBadgeLog.log_type === 'TIME IN') {
+            console.log(`✅ VISITOR BADGE MATCH: Checking out group [${input}]`);
+            
+            // Find the exact people who are currently signed in with this badge
+            const groupMembers = db.prepare(`
+                SELECT visitor_name 
+                FROM visitor_logs 
+                WHERE badge_code COLLATE NOCASE = ? 
+                AND id IN (
+                    SELECT MAX(id) FROM visitor_logs 
+                    WHERE date(timestamp, 'localtime') = date('now', 'localtime') 
+                    GROUP BY visitor_name COLLATE NOCASE
+                )
+                AND log_type = 'TIME IN'
+            `).all(input);
 
-            db.prepare(`
-                INSERT INTO attendance_logs (user_type, visitor_name, log_type) 
-                VALUES ('VISITOR', ?, 'TIME OUT')
-            `).run(activeVisitor.visitor_name);
+            // Log them ALL out instantly
+            const insertOut = db.prepare(`INSERT INTO visitor_logs (badge_code, visitor_name, log_type) VALUES (?, ?, 'TIME OUT')`);
+            const checkoutMany = db.transaction((members) => {
+                for (const member of members) {
+                    insertOut.run(input, member.visitor_name);
+                }
+            });
+            checkoutMany(groupMembers);
 
+            // Extract just the names into a clean array
+            const nameArray = groupMembers.map(m => m.visitor_name);
+
+            // Send success back to the scanner WITH the names included!
             return { 
                 success: true, 
                 logType: 'TIME OUT', 
-                studentName: activeVisitor.visitor_name, 
-                grade: "Visitor", 
-                profilePic: null, // Will use default silhouette
-                studentCode: "GUEST"
+                studentName: ``, 
+                grade: "Visitor Pass", 
+                profilePic: null, 
+                studentCode: input,
+                visitorNames: nameArray
             };
         }
         // ==========================================================
@@ -206,9 +226,20 @@ try {
         }
 
         // If STILL not found after trying Visitors AND Students...
+// If STILL not found after trying Visitors AND Students...
         if (!student) {
+            // 🌟 1. Define your Master Visitor IDs here!
+            const MASTER_VISITOR_BADGES = ["0002075624","0002075629","0002075621","0002075622","0002075623","0002075626"]; 
+
+            // 🌟 2. If it's a Master Badge, trigger the teleport!
+            if (MASTER_VISITOR_BADGES.includes(input)) {
+                console.log(`🎫 Master Visitor Badge Scanned [${input}]. Triggering Registration.`);
+                return { success: false, action: "REGISTER_VISITOR", badgeCode: input }; 
+            } // <-- THIS BRACE WAS MISSING!
+
+            // 🌟 3. If it's NOT a master badge, throw the Unregistered Card error!
             console.log("❌ CRITICAL: Record not found in any table.");
-            return { success: false, error: `[${input}] not found in database.` };
+            return { success: false, error: `[${input}] not found. Unregistered Card.` };
         }
 
         console.log(`✅ STUDENT MATCH: ${student.full_name} (DB ID: [${student.student_code}])`);
@@ -217,7 +248,7 @@ try {
 
         // Determine Student IN or OUT
         const lastLog = db.prepare(`
-            SELECT log_type FROM attendance_logs 
+            SELECT log_type FROM student_logs 
             WHERE student_id = ? 
             AND date(timestamp, 'localtime') = date('now', 'localtime') 
             ORDER BY id DESC LIMIT 1
@@ -226,7 +257,7 @@ try {
         const newLogType = (lastLog && lastLog.log_type === 'TIME IN') ? 'TIME OUT' : 'TIME IN';
 
         // Save Student Log
-        db.prepare(`INSERT INTO attendance_logs (student_id, log_type) VALUES (?, ?)`).run(student.id, newLogType);
+        db.prepare(`INSERT INTO student_logs (student_id, log_type) VALUES (?, ?)`).run(student.id, newLogType);
 
         return { 
             success: true, 
@@ -236,8 +267,8 @@ try {
             profilePic: student.profile_pic,
             studentCode: student.student_code
         };
-    } catch (error) {
-// 1. We finally USE the tool right here! (This makes the warning disappear)
+    } catch(error) {
+        // 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
 
         // 2. We log the beautifully translated message to the text file
@@ -248,24 +279,30 @@ try {
 });
 
 
+
 // ==========================================
-// 3.0.0.1 VISITOR REGISTRATION LOGIC
+// GROUP VISITOR REGISTRATION LOGIC
 // ==========================================
-ipcMain.handle('process-visitors', async (event, visitorsArray) => {
-    if (dbManager.getIsArchiving()) return { success: false, error: "System is archiving. Please wait." };
+ipcMain.handle('process-visitors', async (event, badgeCode, visitorsArray) => {
+    // If you have an archive check, keep it here:
+    // if (dbManager.getIsArchiving()) return { success: false, error: "System archiving." };
 
     try {
         const db = dbManager.getLiveDb(); 
-
+        
+        // 🌟 NEW: We insert both the badge_code AND the visitor_name
         const insertVisitor = db.prepare(`
-            INSERT INTO attendance_logs (user_type, visitor_name, log_type) 
-            VALUES ('VISITOR', ?, 'TIME IN')
+            INSERT INTO visitor_logs (badge_code, visitor_name, log_type) 
+            VALUES (?, ?, 'TIME IN')
         `);
 
-        // Transaction for super-fast mass insert
+        // Transaction loops through the array and assigns the badge to everyone
         const insertMany = db.transaction((visitors) => {
             for (const visitor of visitors) {
-                insertVisitor.run(visitor.name); 
+                // Failsafe to make sure it's reading the names correctly
+                if (visitor && visitor.name && visitor.name.trim() !== "") {
+                    insertVisitor.run(badgeCode, visitor.name.trim()); 
+                }
             }
         });
 
@@ -273,9 +310,8 @@ ipcMain.handle('process-visitors', async (event, visitorsArray) => {
         return { success: true };
 
     } catch (error) { 
-        const friendlyMessage = getFriendlyError(error);
-        log.error(`Visitor Error: ${friendlyMessage} | Tech Details: ${error.message}`);
-        return { success: false, error: friendlyMessage }; 
+        console.error("Visitor Error:", error);
+        return { success: false, error: error.message }; 
     }
 });
 
@@ -451,20 +487,33 @@ ipcMain.handle('get-deleted-students', async () => {
 ipcMain.handle('get-logs', async (event, date) => {
     try {
         const db = dbManager.getReportDb(); 
-        const query = `
+const query = `
             SELECT 
-                COALESCE(students.student_code, 'VISITOR') AS student_code, 
-                COALESCE(students.full_name, attendance_logs.visitor_name) AS full_name, 
-                COALESCE(students.grade_level, 'Guest') AS grade_level, 
-                attendance_logs.user_type,
-                attendance_logs.log_type, 
-                datetime(attendance_logs.timestamp, 'localtime') as timestamp 
-            FROM attendance_logs 
-            LEFT JOIN students ON attendance_logs.student_id = students.id 
-            WHERE DATE(attendance_logs.timestamp, 'localtime') = ? 
-            ORDER BY attendance_logs.timestamp DESC`;
+                students.student_code AS student_code, 
+                students.full_name AS full_name, 
+                students.grade_level AS grade_level, 
+                'STUDENT' AS user_type,
+                student_logs.log_type, 
+                datetime(student_logs.timestamp, 'localtime') as timestamp 
+            FROM student_logs 
+            JOIN students ON student_logs.student_id = students.id 
+            WHERE DATE(student_logs.timestamp, 'localtime') = ? 
 
-        return { success: true, data: db.prepare(query).all(date) };
+            UNION ALL
+
+            SELECT 
+                IFNULL(visitor_logs.badge_code, 'VISITOR') AS student_code, 
+                visitor_logs.visitor_name AS full_name, 
+                'Guest' AS grade_level, 
+                'VISITOR' AS user_type,
+                visitor_logs.log_type, 
+                datetime(visitor_logs.timestamp, 'localtime') as timestamp 
+            FROM visitor_logs 
+            WHERE DATE(visitor_logs.timestamp, 'localtime') = ? 
+
+            ORDER BY timestamp DESC`;
+
+        return { success: true, data: db.prepare(query).all(date, date) };
 
     } catch (error) {
         const friendlyMessage = getFriendlyError(error);
@@ -481,12 +530,12 @@ ipcMain.handle('get-active-visitors', async () => {
         
         // This query finds the absolute latest scan for every visitor today, 
         // and only returns them if that latest scan was a 'TIME IN'
-        const activeVisitors = db.prepare(`
+const activeVisitors = db.prepare(`
             SELECT visitor_name, timestamp 
-            FROM attendance_logs 
+            FROM visitor_logs 
             WHERE id IN (
-                SELECT MAX(id) FROM attendance_logs 
-                WHERE user_type = 'VISITOR' AND date(timestamp, 'localtime') = date('now', 'localtime') 
+                SELECT MAX(id) FROM visitor_logs 
+                WHERE date(timestamp, 'localtime') = date('now', 'localtime') 
                 GROUP BY visitor_name COLLATE NOCASE
             )
             AND log_type = 'TIME IN'
@@ -502,21 +551,33 @@ ipcMain.handle('get-active-visitors', async () => {
 ipcMain.handle('get-logs-range', async (event, start, end) => {
     try {
         const db = dbManager.getReportDb(); 
-        const query = `
+const query = `
             SELECT 
-                COALESCE(students.student_code, 'VISITOR') AS student_code, 
-                COALESCE(students.full_name, attendance_logs.visitor_name) AS full_name, 
-                COALESCE(students.grade_level, 'Guest') AS grade_level, 
-                attendance_logs.user_type,
-                attendance_logs.log_type, 
-                datetime(attendance_logs.timestamp, 'localtime') as timestamp 
-            FROM attendance_logs 
-            LEFT JOIN students ON attendance_logs.student_id = students.id 
-            WHERE DATE(attendance_logs.timestamp, 'localtime') BETWEEN ? AND ? 
-            ORDER BY attendance_logs.timestamp DESC`; // Changed to DESC for better view
+                students.student_code AS student_code, 
+                students.full_name AS full_name, 
+                students.grade_level AS grade_level, 
+                'STUDENT' AS user_type,
+                student_logs.log_type, 
+                datetime(student_logs.timestamp, 'localtime') as timestamp 
+            FROM student_logs 
+            JOIN students ON student_logs.student_id = students.id 
+            WHERE DATE(student_logs.timestamp, 'localtime') BETWEEN ? AND ? 
 
-        // 🌟 FIX: We use 'start' and 'end' because those are the names in the line above
-        const logs = db.prepare(query).all(start, end);
+            UNION ALL
+
+            SELECT 
+                IFNULL(visitor_logs.badge_code, 'VISITOR') AS student_code, 
+                visitor_logs.visitor_name AS full_name, 
+                'Guest' AS grade_level, 
+                'VISITOR' AS user_type,
+                visitor_logs.log_type, 
+                datetime(visitor_logs.timestamp, 'localtime') as timestamp 
+            FROM visitor_logs 
+            WHERE DATE(visitor_logs.timestamp, 'localtime') BETWEEN ? AND ? 
+
+            ORDER BY timestamp DESC`;
+
+        const logs = db.prepare(query).all(start, end, start, end);
         return { success: true, data: logs };
 
     } catch (error) {
