@@ -21,6 +21,9 @@ contextBridge.exposeInMainWorld('api', {
     restoreStudent: (id) => ipcRenderer.invoke('restore-student', id),
     openLogFile: () => ipcRenderer.invoke('open-log-file'),
     processVisitors: (badgeCode, visitorsArray) => ipcRenderer.invoke('process-visitors', badgeCode, visitorsArray),
-    getActiveVisitors: () => ipcRenderer.invoke('get-active-visitors')
+    getActiveVisitors: () => ipcRenderer.invoke('get-active-visitors'),
+    addMasterBadge: (code, desc) => ipcRenderer.invoke('add-master-badge', code, desc),
+    getMasterBadges: () => ipcRenderer.invoke('get-master-badges'),
+    deleteMasterBadge: (code) => ipcRenderer.invoke('delete-master-badge', code)
 
 });

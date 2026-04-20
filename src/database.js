@@ -59,10 +59,19 @@ liveDb.exec(`
 liveDb.exec(`
     CREATE TABLE IF NOT EXISTS visitor_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        badge_code TEXT,
         visitor_name TEXT, 
+        badge_code TEXT,    
         log_type TEXT, 
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+`);
+
+liveDb.exec(`
+    CREATE TABLE IF NOT EXISTS master_badges (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        badge_code TEXT UNIQUE,
+        description TEXT,
+        date_added DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 `);
 }
@@ -81,7 +90,7 @@ initLiveDb();
 initReportDb(liveDbPath);
 
 // --- 3. ARCHIVE LOGIC ---
-function archiveCurrentYear(schoolYearStr) {
+async function archiveCurrentYear(schoolYearStr) {
     if (isArchiving) throw new Error('Archiving in progress.');
     isArchiving = true;
 
@@ -91,27 +100,37 @@ function archiveCurrentYear(schoolYearStr) {
 
         if (fs.existsSync(targetPath)) throw new Error(`Archive for ${schoolYearStr} already exists!`);
 
-        console.log("Safely closing databases for archiving...");
-        liveDb.pragma('wal_checkpoint(TRUNCATE)');
-        liveDb.close();
-        reportDb.close();
+        console.log("🔒 Safely closing databases for archiving...");
+        
+        // 1. Merge the WAL files first
+        if (liveDb) liveDb.pragma('wal_checkpoint(TRUNCATE)');
+        
+        // 2. Close the connections
+        if (liveDb) { liveDb.close(); liveDb = null; }
+        if (reportDb) { reportDb.close(); reportDb = null; }
 
-        console.log("Moving file to archive folder...");
-        fs.renameSync(liveDbPath, targetPath);
+        // 🌟 3. THE MAGIC FIX: Wait 200ms to give Windows time to release the lock
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Clean up hidden SQLite files if they got left behind
+        console.log("📂 Moving file to archive folder...");
+        
+        // 4. Double check if WAL files are still there and delete them manually
         if (fs.existsSync(liveDbPath + '-wal')) fs.unlinkSync(liveDbPath + '-wal');
         if (fs.existsSync(liveDbPath + '-shm')) fs.unlinkSync(liveDbPath + '-shm');
 
-        console.log("Rebuilding new empty database...");
+        // 5. Perform the rename
+        fs.renameSync(liveDbPath, targetPath);
+
+        console.log("🆕 Rebuilding new empty database...");
         initLiveDb();
         initReportDb(liveDbPath);
 
         return { success: true };
     } catch (error) {
         console.error("Archive Error:", error);
-        initLiveDb();
-        initReportDb(liveDbPath);
+        // Safety: Re-init if something broke
+        if (!liveDb) initLiveDb();
+        if (!reportDb) initReportDb(liveDbPath);
         return { success: false, error: error.message };
     } finally {
         isArchiving = false;

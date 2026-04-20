@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <title>Add New Student | SJSFI Library</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    
-
     <link rel="stylesheet" href="assets/css/add-students.css">
 </head>
 <body>
 
-
-        <div id="loading-overlay" class="hidden">
+    <div id="loading-overlay" class="hidden">
         <div class="spinner"></div>
         <h3 id="loading-text" style="margin-top: 20px; font-weight: 700; letter-spacing: 1px;">Processing...</h3>
     </div>
@@ -40,9 +37,16 @@
             <a href="manage.html" class="btn-back">
                 <i class='bx bx-left-arrow-alt' style="font-size: 20px;"></i> Back to Student Roster
             </a>
-            <button onclick="handleImportCSV()" class="btn-import">
-                <i class='bx bx-upload'></i> Import CSV
-            </button>
+            
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="openBadgeModalBtn" class="btn-import" style="background: #e67e22; border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                    <i class='bx bx-id-card'></i> Master Badges
+                </button>
+                
+                <button type="button" id="importCsvBtn" class="btn-import" onclick="handleImportCSV()">
+                    <i class='bx bx-upload'></i> Import CSV
+                </button>
+            </div>
         </div>
 
         <div class="card">
@@ -98,7 +102,30 @@
         </div>
     </div>
 
-<script src="assets/js/add-students.js">
-    </script>
+    <div id="masterBadgeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center;">
+        <div style="background: white; width: 90%; max-width: 480px; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 15px;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #1e293b; font-size: 18px;">
+                    <i class='bx bx-id-card' style="color: #e67e22; font-size: 24px;"></i> Manage Master Badges
+                </h3>
+                <i id="closeBadgeModalBtn" class='bx bx-x' style="font-size: 26px; cursor: pointer; color: #94a3b8; transition: 0.2s;" onmouseover="this.style.color='red'" onmouseout="this.style.color='#94a3b8'"></i>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="newBadgeInput" placeholder="Scan/Type RFID" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace;">
+                <input type="text" id="newBadgeDesc" placeholder="Description" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                <button type="button" id="submitNewBadgeBtn" style="background: #27ae60; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">Add</button>
+            </div>
+            <div id="badgeFormStatus" style="font-size: 12px; height: 16px; margin-bottom: 15px; font-weight: bold;"></div>
+
+            <div style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase;">Active Visitor Passes</div>
+            
+            <div id="badgeListContainer" style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; padding: 5px;">
+                </div>
+        </div>
+    </div>
+
+    <script src="assets/js/add-students.js"></script>
 </body>
 </html>

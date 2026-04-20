@@ -1,5 +1,6 @@
-            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        // Turns on the loading screen and changes the text
+console.log("🟢 The Javascript file is successfully loaded!");
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// Turns on the loading screen and changes the text
 function showLoading(message = "Processing...") {
     document.getElementById('loading-text').innerText = message;
     document.getElementById('loading-overlay').classList.remove('hidden');
@@ -203,3 +204,118 @@ function hideLoading() {
                 submitBtn.innerHTML = `Save Student Record`; 
             }
         }
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const openBtn = document.getElementById('openBadgeModalBtn');
+    const closeBtn = document.getElementById('closeBadgeModalBtn');
+    const submitBtn = document.getElementById('submitNewBadgeBtn');
+
+    if (openBtn) {
+        openBtn.addEventListener('click', () => {
+            document.getElementById('masterBadgeModal').style.display = 'flex';
+            document.getElementById('newBadgeInput').focus();
+            loadMasterBadges();
+        });
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            document.getElementById('masterBadgeModal').style.display = 'none';
+            document.getElementById('newBadgeInput').value = '';
+            if(document.getElementById('badgeFormStatus')) {
+                 document.getElementById('badgeFormStatus').innerHTML = '';
+            }
+        });
+    }
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', (event) => {
+            event.preventDefault(); 
+            saveNewBadge();
+        });
+    }
+});
+
+async function loadMasterBadges() {
+    const container = document.getElementById('badgeListContainer');
+    if (!container) return;
+    
+    container.innerHTML = `<div style="text-align: center; color: gray; padding: 20px;"><i class='bx bx-loader bx-spin'></i></div>`;
+
+    try {
+        const res = await window.api.getMasterBadges();
+
+        if (res.success && res.data.length > 0) {
+            container.innerHTML = res.data.map(badge => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; margin-bottom: 5px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div>
+                        <div style="font-family: monospace; font-size: 14px; font-weight: bold; color: #1e293b;">${badge.badge_code}</div>
+                        <div style="font-size: 11px; color: #64748b;">Master Visitor Pass</div>
+                    </div>
+                    <button class="delete-badge-btn" data-code="${badge.badge_code}" style="background: transparent; color: #e74c3c; border: none; cursor: pointer; font-size: 18px;">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.delete-badge-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const code = e.currentTarget.getAttribute('data-code');
+                    removeBadge(code);
+                });
+            });
+
+        } else {
+            container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 13px;">No Master Badges registered.</div>`;
+        }
+    } catch (err) {
+        container.innerHTML = `<div style="color: red; padding: 10px;">Error loading badges.</div>`;
+    }
+}
+
+async function saveNewBadge() {
+    const codeInput = document.getElementById('newBadgeInput');
+    const statusBox = document.getElementById('badgeFormStatus');
+    const code = codeInput.value.trim();
+
+    // 🛡️ 10-Digit Validation
+    if (!code) {
+        statusBox.innerHTML = "<span style='color: #e74c3c;'>Enter an RFID code.</span>";
+        return;
+    }
+
+    if (code.length !== 10 || isNaN(code)) {
+        statusBox.innerHTML = "<span style='color: #e74c3c;'>Invalid: RFID must be exactly 10 digits.</span>";
+        return;
+    }
+
+    statusBox.innerHTML = "<span style='color: #f39c12;'><i class='bx bx-loader bx-spin'></i> Saving...</span>";
+
+    try {
+        // Description is sent as a generic string since it's removed from UI
+        const res = await window.api.addMasterBadge(code, "Master Visitor Pass");
+        
+        if (res.success) {
+            statusBox.innerHTML = "<span style='color: #27ae60;'>✅ Saved successfully!</span>";
+            codeInput.value = '';
+            loadMasterBadges();
+            setTimeout(() => statusBox.innerHTML = '', 2000);
+        } else {
+            statusBox.innerHTML = `<span style='color: #e74c3c;'>❌ Error: ${res.error}</span>`;
+        }
+    } catch (err) {
+        console.error("Crash during save:", err);
+    }
+}
+
+async function removeBadge(code) {
+    if(confirm(`Delete Master Badge: ${code}?`)) {
+        try {
+            await window.api.deleteMasterBadge(code);
+            loadMasterBadges();
+        } catch (err) {
+            console.error("Crash during remove:", err);
+        }
+    }
+}

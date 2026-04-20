@@ -226,21 +226,22 @@ ipcMain.handle('process-attendance', async (event, code) => {
         }
 
         // If STILL not found after trying Visitors AND Students...
-// If STILL not found after trying Visitors AND Students...
-        if (!student) {
-            // 🌟 1. Define your Master Visitor IDs here!
-            const MASTER_VISITOR_BADGES = ["0002075624","0002075629","0002075621","0002075622","0002075623","0002075626"]; 
+if (!student) {
+    // We use TRIM to remove accidental spaces and COLLATE NOCASE for safety
+    const masterBadge = db.prepare(`
+        SELECT * FROM master_badges 
+        WHERE TRIM(badge_code) COLLATE NOCASE = TRIM(?)
+    `).get(input);
 
-            // 🌟 2. If it's a Master Badge, trigger the teleport!
-            if (MASTER_VISITOR_BADGES.includes(input)) {
-                console.log(`🎫 Master Visitor Badge Scanned [${input}]. Triggering Registration.`);
-                return { success: false, action: "REGISTER_VISITOR", badgeCode: input }; 
-            } // <-- THIS BRACE WAS MISSING!
+    if (masterBadge) {
+        console.log(`🎫 SUCCESS: Master Badge Found [${input}]. Teleporting...`);
+        return { success: false, action: "REGISTER_VISITOR", badgeCode: input }; 
+    }
 
-            // 🌟 3. If it's NOT a master badge, throw the Unregistered Card error!
-            console.log("❌ CRITICAL: Record not found in any table.");
-            return { success: false, error: `[${input}] not found. Unregistered Card.` };
-        }
+    // If we reach here, it TRULY isn't in the database
+    console.log("❌ CRITICAL: Record not found in any table.");
+    return { success: false, error: `[${input}] not found. Unregistered Card.` };
+}
 
         console.log(`✅ STUDENT MATCH: ${student.full_name} (DB ID: [${student.student_code}])`);
 
@@ -278,7 +279,38 @@ ipcMain.handle('process-attendance', async (event, code) => {
     }
 });
 
+// --- ADMIN: ADD NEW MASTER BADGE ---
+ipcMain.handle('add-master-badge', async (event, badgeCode, description) => {
+    try {
+        const db = dbManager.getReportDb(); // Use your live DB connection
+        db.prepare(`INSERT INTO master_badges (badge_code, description) VALUES (?, ?)`).run(badgeCode, description || 'Visitor Pass');
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: "Badge might already exist." };
+    }
+});
 
+// --- ADMIN: GET ALL MASTER BADGES ---
+ipcMain.handle('get-master-badges', async () => {
+    try {
+        const db = dbManager.getReportDb();
+        const badges = db.prepare(`SELECT * FROM master_badges ORDER BY date_added DESC`).all();
+        return { success: true, data: badges };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+// --- ADMIN: DELETE MASTER BADGE ---
+ipcMain.handle('delete-master-badge', async (event, badgeCode) => {
+    try {
+        const db = dbManager.getReportDb();
+        db.prepare(`DELETE FROM master_badges WHERE badge_code = ?`).run(badgeCode);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
 
 // ==========================================
 // GROUP VISITOR REGISTRATION LOGIC
@@ -621,7 +653,8 @@ ipcMain.handle('get-archives', () => {
 });
 
 ipcMain.handle('archive-school-year', async (event, schoolYearStr) => {
-    return dbManager.archiveCurrentYear(schoolYearStr);
+
+    return await dbManager.archiveCurrentYear(schoolYearStr);
 });
 
 
