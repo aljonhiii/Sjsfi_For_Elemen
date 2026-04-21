@@ -40,7 +40,7 @@
             
             <div style="display: flex; gap: 10px;">
                 <button type="button" id="openBadgeModalBtn" class="btn-import" style="background: #e67e22; border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                    <i class='bx bx-id-card'></i> Master Badges
+                    <i class='bx bx-id-card'></i> Visitors Cards (RFID)
                 </button>
                 
                 <button type="button" id="importCsvBtn" class="btn-import" onclick="handleImportCSV()">
@@ -107,22 +107,22 @@
             
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 15px;">
                 <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #1e293b; font-size: 18px;">
-                    <i class='bx bx-id-card' style="color: #e67e22; font-size: 24px;"></i> Manage Master Badges
+                    <i class='bx bx-id-card' style="color: #e67e22; font-size: 24px;"></i> Manage Visitors Card
                 </h3>
                 <i id="closeBadgeModalBtn" class='bx bx-x' style="font-size: 26px; cursor: pointer; color: #94a3b8; transition: 0.2s;" onmouseover="this.style.color='red'" onmouseout="this.style.color='#94a3b8'"></i>
             </div>
 
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <input type="text" id="newBadgeInput" placeholder="Scan/Type RFID" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace;">
-                <input type="text" id="newBadgeDesc" placeholder="Description" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                <input type="text" id="newBadgeInput" placeholder="Scan RFID (10 digits)" maxlength="10" inputmode="numeric" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace;">
                 <button type="button" id="submitNewBadgeBtn" style="background: #27ae60; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">Add</button>
             </div>
+            
             <div id="badgeFormStatus" style="font-size: 12px; height: 16px; margin-bottom: 15px; font-weight: bold;"></div>
 
             <div style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase;">Active Visitor Passes</div>
             
             <div id="badgeListContainer" style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; padding: 5px;">
-                </div>
+            </div>
         </div>
     </div>
 

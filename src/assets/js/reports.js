@@ -142,7 +142,7 @@ function renderLogsTable() {
                 // 🌟 CLEAN TEXT LABEL INSTEAD OF BULKY BADGE 🌟
                 const typeLabel = log.user_type === 'VISITOR' 
                     ? `<span style="color: #f39c12; font-weight: 800; font-size: 12px; margin-left: 6px;">(VISITOR)</span>`
-                    : `<span style="color: var(--primary-color); font-weight: 800; font-size: 12px; margin-left: 6px;">(STUDENT)</span>`;
+                    : `<span style="color: #1420c9; font-weight: 800; font-size: 12px; margin-left: 6px;">(STUDENT)</span>`;
                 
                 tbody.innerHTML += `<tr>
                     <td><strong style="color: var(--primary-dark); font-size: 15px;">${log.full_name}</strong> ${typeLabel}</td>
@@ -216,7 +216,7 @@ async function exportLogsPDF() {
                     // 🌟 CLEAN TEXT LABEL FOR PDF 🌟
                     const roleLabel = log.user_type === 'VISITOR' 
                         ? `<span style="color: #f39c12; font-size: 11px; font-weight: bold; margin-left: 4px;">(VISITOR)</span>` 
-                        : `<span style="color: #27ae60; font-size: 11px; font-weight: bold; margin-left: 4px;">(STUDENT)</span>`;
+                        : `<span style="color: #1420c9; font-size: 11px; font-weight: bold; margin-left: 4px;">(STUDENT)</span>`;
                     
                     fullTableRows += `<tr>
                         <td><b>${log.full_name}</b> ${roleLabel}</td>

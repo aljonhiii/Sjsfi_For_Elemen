@@ -27,13 +27,16 @@ const timeInSound = new Audio('assets/spelling-bee.mp3');
         let countdownInterval;
         let resetTimer; 
 
-        // 🧠 THE MEMORY: A sleek outline waiting for an ID
-        let lastSuccessfulProfile = `
-            <div class="modern-card" style="opacity: 0.5; border: 2px dashed var(--border-color); background: transparent; display: flex; justify-content: center; align-items: center; flex-direction: column;">
-                <i class='bx bxs-user-detail' style="font-size: 60px; color: var(--text-secondary); opacity: 0.5; margin-bottom: 10px;"></i>
-                <div style="color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">WAITING FOR ID</div>
-            </div>
-        `;
+let visitorClearTimer; // ⏱️ NEW: Timer just for visitors
+
+// 🧠 THE MEMORY: A sleek outline waiting for an ID
+const EMPTY_STATE_HTML = `
+    <div class="modern-card" style="opacity: 0.5; border: 2px dashed var(--border-color); background: transparent; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+        <i class='bx bxs-user-detail' style="font-size: 60px; color: var(--text-secondary); opacity: 0.5; margin-bottom: 10px;"></i>
+        <div style="color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">WAITING FOR ID</div>
+    </div>
+`;
+let lastSuccessfulProfile = EMPTY_STATE_HTML;
 
         scanInput.addEventListener('keypress', async function (e) {
             if (e.key === 'Enter') {
@@ -45,7 +48,7 @@ const timeInSound = new Audio('assets/spelling-bee.mp3');
                 if (!code) return;
 
                 // ==========================================================
-                // 🔓 INTERCEPT: CHECK IF IT IS THE MASTER ADMIN KEY
+                //  INTERCEPT: CHECK IF IT IS THE MASTER ADMIN KEY
                 // ==========================================================
                 if (librarian_admin_rfid_access.includes(code)) {
                     console.log("🔓 Admin Master Key Scanned!");
@@ -114,7 +117,24 @@ const timeInSound = new Audio('assets/spelling-bee.mp3');
                 }
                 // ==========================================================
 
-                if (code.length > 10) code = code.substring(0, 10);
+              // ==========================================================
+const isOnlyNumbers = /^\d+$/.test(code);
+
+if (code.length !== 10 || !isOnlyNumbers) {
+    errorSound.currentTime = 0;
+    errorSound.play().catch(() => {});
+    
+    statusMessage.innerHTML = `<span class="scan-error" style="color: var(--danger-color); font-weight: bold;"><i class='bx bx-error-circle'></i> Invalid ID Format</span>`;
+    scanResultContent.innerHTML = `<div style="color: var(--danger-color); padding: 20px; text-align: center; font-weight: bold;">Please scan the ID properly.</div>`;
+    
+    // Reset scanner quickly
+    setTimeout(() => {
+        statusMessage.innerHTML = ``;
+        scanResultContent.innerHTML = lastSuccessfulProfile;
+    }, 1500);
+    
+    return; // 🛑 Stop the code from going to the database
+}
 
                 if (isScannerLocked) return; 
 
@@ -163,7 +183,7 @@ const timeInSound = new Audio('assets/spelling-bee.mp3');
                         const dateString = new Date().toLocaleDateString();
 
                         // ==========================================================
-                        // 🌟 DYNAMIC DESCRIPTION HTML (Handles standard grades OR visitor names!)
+                        //  DYNAMIC DESCRIPTION HTML (Handles standard grades OR visitor names!)
                         // ==========================================================
                         let descHTML = `
                             <p class="modern-card-desc">
@@ -176,12 +196,13 @@ let newProfileHTML = '';
                         // ==========================================================
                         // 🌟 SPLIT UI LOGIC: DEDICATED VISITOR TEMPLATE VS STUDENT
                         // ==========================================================
-// ==========================================================
-                        // 🌟 SPLIT UI LOGIC: DEDICATED VISITOR TEMPLATE VS STUDENT
-                        // ==========================================================
+                        
+                        // 🛑 Stop the timer if someone else scans immediately!
+                        clearTimeout(visitorClearTimer);
+
                         if (result.visitorNames && result.visitorNames.length > 0) {
                             
-                            // 🎫 1. COMPACT VISITOR LIST: Smaller text, smaller avatars, tighter spacing
+                            // 🎫 1. COMPACT VISITOR LIST
                             const namesList = result.visitorNames.map(n => 
                                 `<div style="font-size: 14px; font-weight: 700; color: #1e293b; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
                                     <div style="background: #cbd5e1; border-radius: 50%; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center;">
@@ -191,25 +212,21 @@ let newProfileHTML = '';
                                 </div>`
                             ).join('');
                             
-                            // 🎫 2. COMPACT GREEN VISITOR CARD: Light green gradient, reduced padding, set max-width
+                            // 🎫 2. COMPACT GREEN VISITOR CARD HTML
                             newProfileHTML = `
                                 <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; padding: 0; max-width: 340px; margin: 0 auto;">
-                                    
                                     <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 20px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; width: 100%;">
                                         <div style="background: rgba(255,255,255,0.25); padding: 4px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-top: 8px; letter-spacing: 1px;">
                                             RFID: ${result.studentCode}
                                         </div>
                                     </div>
-                                    
                                     <div class="modern-card-overlay" style="padding: 15px 20px; width: 100%; box-sizing: border-box;">
                                         <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 12px; text-align: left; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
                                             Logged Out Guests (${result.visitorNames.length})
                                         </div>
-                                        
                                         <div style="width: 100%; max-height: 160px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
                                             ${namesList}
                                         </div>
-                                        
                                         <div class="modern-card-tags" style="justify-content: center; gap: 8px;">
                                             <div class="modern-tag ${badgeClass}" style="padding: 4px 10px; font-size: 11px;">
                                                 <i class='bx bx-scan'></i> ${result.logType}
@@ -219,42 +236,52 @@ let newProfileHTML = '';
                                     </div>
                                 </div>
                             `;
+
+                            // 🎫 3. SHOW THE VISITOR ON SCREEN
+                            scanResultContent.innerHTML = newProfileHTML;
+                            
+                            // 🎫 4. SET MEMORY TO EMPTY (Don't remember visitors)
+                            lastSuccessfulProfile = EMPTY_STATE_HTML;
+
+                            // 🎫 5. THE DISAPPEARING ACT: Hide visitor after 3.5 seconds
+                            visitorClearTimer = setTimeout(() => {
+                                scanResultContent.innerHTML = EMPTY_STATE_HTML;
+                                statusMessage.innerHTML = '';
+                            }, 3500);
                             
                         } else {
                             
-                            // 🎓 STANDARD STUDENT TEMPLATE (Stays exactly the same)
+                            // 🎓 1. STANDARD STUDENT TEMPLATE HTML
                             newProfileHTML = `
                                 <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
                                     <img class="modern-card-img" src="${picSrc}" onerror="this.src='https://via.placeholder.com/320x400/1e293b/ffffff?text=No+Photo'">
-                                    
                                     <div class="modern-card-overlay">
                                         <div class="modern-card-header">
                                             <h2 class="modern-card-title">${result.studentName}</h2>
                                         </div>
-                                        
                                         <p class="modern-card-desc">
                                             Grade Level: <strong>${result.grade}</strong>
                                         </p>
-                                        
                                         <div class="modern-card-tags">
                                             <div class="modern-tag ${badgeClass}">
                                                 <i class='bx bx-scan'></i> ${result.logType}
                                             </div>
-                                            
                                             <div class="modern-tag"><i class='bx bx-time'></i> ${timeString}</div>
                                             <div class="modern-tag"><i class='bx bx-calendar'></i> ${dateString}</div>
                                         </div>
                                     </div>
                                 </div>
                             `;
+
+                            // 🎓 2. SHOW THE STUDENT ON SCREEN
+                            scanResultContent.innerHTML = newProfileHTML;
+                            
+                            // 🎓 3. REMEMBER THE STUDENT (They stay until next scan)
+                            lastSuccessfulProfile = newProfileHTML;
                         }
-
-                        scanResultContent.innerHTML = newProfileHTML;
-                        lastSuccessfulProfile = newProfileHTML;
-
                     } else {
                         // ==============================================================
-                        // 🌟 THE NEW MASTER VISITOR TELEPORT CATCHER
+                        //  THE NEW MASTER VISITOR TELEPORT CATCHER
                         // ==============================================================
                         if (result.action === "REGISTER_VISITOR") {
                             console.log("Visitor Pass Recognized! Redirecting...");
@@ -321,7 +348,7 @@ let newProfileHTML = '';
                         }
 
                         // ==============================================================
-                        // ❌ NORMAL FAILED SCAN LOGIC (Unregistered cards)
+                        //  NORMAL FAILED SCAN LOGIC (Unregistered cards)
                         // ==============================================================
                         errorSound.currentTime = 0;
                         errorSound.play().catch(() => {});

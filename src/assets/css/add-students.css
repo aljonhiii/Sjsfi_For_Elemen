@@ -1,4 +1,4 @@
-        /* === GLOBAL STYLES === */
+/* === GLOBAL STYLES === */
         :root {
             --bg-body: #f3faef;
             --bg-sidebar: #ffffff;
@@ -96,12 +96,11 @@
         .btn-modal.error-btn { background: var(--danger-color); }
         .btn-modal.error-btn:hover { background: #b02a2a; }
 
-
-                /* === GLOBAL LOADING OVERLAY === */
+        /* === GLOBAL LOADING OVERLAY === */
         #loading-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: rgba(15, 23, 42, 0.85); /* Dark blue/grey matching your modal */
+            background-color: rgba(15, 23, 42, 0.85); 
             backdrop-filter: blur(4px);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: white; z-index: 99999;
@@ -115,3 +114,24 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ========================================================= */
+        /* 📺 4K & ULTRA-WIDE SCREENS (Auto-Zooming above 2000px)    */
+        /* ========================================================= */
+@media (min-width: 2000px) { 
+            body { zoom: 1.15; } 
+        }
+        
+        /* 3. Kicks in for Mid-range 4K screens */
+        @media (min-width: 2600px) { 
+            body { zoom: 1.40; } 
+        }
+        
+        /* 4. Kicks in for True 4K (3840px) and Massive TVs */
+        @media (min-width: 3200px) { 
+            body { zoom: 1.60; } 
+        }
+
+        @media (min-width: 3800px) { 
+            body { zoom: 2.0; } 
+        }

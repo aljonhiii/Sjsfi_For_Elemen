@@ -1,4 +1,4 @@
-        /* === GLOBAL STYLES (Green Theme) === */
+/* === GLOBAL STYLES (Green Theme) === */
         :root {
             --bg-body: #f3faef; 
             --bg-card: #ffffff;
@@ -125,9 +125,11 @@
             overflow-y: hidden; 
             display: flex;
             flex-direction: column;
+            align-items: center; /* 🌟 Center horizontally */
+            justify-content: center; /* 🌟 Center vertically */
         }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; max-width: 950px;}
         .header h1 { margin: 0; font-size: 26px; font-weight: 800; color: var(--primary-dark); }
 
         /* === TWO-COLUMN KIOSK LAYOUT === */
@@ -137,6 +139,7 @@
             justify-content: center;
             align-items: center;
             padding-bottom: 10px; 
+            width: 100%;
         }
 
         .scanner-layout-wrapper {
@@ -150,6 +153,7 @@
             grid-template-columns: 1fr 1fr; 
             min-height: 500px;
             overflow: hidden; 
+            transition: all 0.3s ease;
         }
 
         /* LEFT COLUMN */
@@ -363,3 +367,31 @@
             from { opacity: 0; transform: translateY(-15px) scale(0.95); }
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        /* ========================================================= */
+        /*  RESPONSIVE KIOSK MEDIA QUERIES                         */
+        /* ========================================================= */
+
+        /* --- SMALL SCREENS (Stack layout on standard laptops/tablets if it gets too tight) --- */
+        @media (max-width: 900px) {
+            .scanner-layout-wrapper {
+                grid-template-columns: 1fr; /* Stack vertically */
+                max-width: 500px;
+                min-height: auto;
+            }
+            .scanner-display-section {
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+            .official-header { flex-direction: column; gap: 15px; text-align: center; }
+            .scanner-title-area { align-items: center; }
+        }
+
+        /* --- LARGE DESKTOPS, 4K & ULTRA-WIDE (Auto-Zooming) --- */
+        /* We zoom the `.main-content` instead of the body so the school header stays normal size */
+            @media (min-width: 1600px) { .main-content { zoom: 1.15; } }
+        @media (min-width: 2000px) { .main-content { zoom: 1.35; } }
+        @media (min-width: 2100px) { .main-content { zoom: 1.45; } } /* 🌟 NEW STEP */
+        @media (min-width: 2600px) { .main-content { zoom: 1.55; } } /* 🌟 NEW STEP */
+        @media (min-width: 2800px) { .main-content { zoom: 1.65; } }
+        @media (min-width: 3500px) { .main-content { zoom: 2.0; } }

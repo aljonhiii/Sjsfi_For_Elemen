@@ -131,3 +131,10 @@ body {
 .btn-cancel:hover { color: var(--danger-color); text-decoration: underline; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========================================================= */
+/* 📺 4K & ULTRA-WIDE SCREENS (Auto-Zooming above 2000px)    */
+/* ========================================================= */
+@media (min-width: 2000px) { body { zoom: 1.3; } }
+@media (min-width: 2800px) { body { zoom: 1.6; } }
+@media (min-width: 3500px) { body { zoom: 2.0; } }

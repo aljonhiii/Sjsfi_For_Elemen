@@ -148,41 +148,51 @@ ipcMain.handle('process-attendance', async (event, code) => {
         return { success: false, error: "Can't scan while viewing an archived school year. Please switch back to Current Year." };
     }
 
-    try {
+try {
         const db = dbManager.getReportDb(); 
         const input = code.trim(); // Clean the input
 
+        // ==========================================================
+        // 🌟 THE ULTIMATE FIX: JAVASCRIPT LOCAL CLOCK
+        // This forces the database to use EXACTLY today in Zamboanga
+        // ==========================================================
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayLocal = `${year}-${month}-${day}`;
+
         // 1. TRACKING: See exactly what the scanner sent
-        console.log(`\n📡 SCAN RECEIVED: [${input}] (Length: ${input.length})`);
+        console.log(`\n📡 SCAN RECEIVED: [${input}] (Length: ${input.length}) | TODAY: ${todayLocal}`);
 
         // ==========================================================
         // 🌟 STEP 1.5: VISITOR CHECKOUT INTERCEPT 🌟
         // ==========================================================
-        // Fix: We now check the badge_code column instead of the visitor_name!
+        // Notice we replaced 'localtime' with our bulletproof todayLocal variable
         const latestBadgeLog = db.prepare(`
             SELECT log_type 
             FROM visitor_logs 
             WHERE badge_code COLLATE NOCASE = ? 
-            AND date(timestamp, 'localtime') = date('now', 'localtime')
+            AND date(timestamp) = ?
             ORDER BY id DESC LIMIT 1
-        `).get(input);
+        `).get(input, todayLocal);
 
-        // If the badge is currently checked IN, intercept and log them OUT!
+        // If the badge is currently checked IN TODAY, intercept and log them OUT!
         if (latestBadgeLog && latestBadgeLog.log_type === 'TIME IN') {
             console.log(`✅ VISITOR BADGE MATCH: Checking out group [${input}]`);
             
-            // Find the exact people who are currently signed in with this badge
+            // Find the exact people who are currently signed in with this badge TODAY
             const groupMembers = db.prepare(`
                 SELECT visitor_name 
                 FROM visitor_logs 
                 WHERE badge_code COLLATE NOCASE = ? 
                 AND id IN (
                     SELECT MAX(id) FROM visitor_logs 
-                    WHERE date(timestamp, 'localtime') = date('now', 'localtime') 
+                    WHERE date(timestamp) = ? 
                     GROUP BY visitor_name COLLATE NOCASE
                 )
                 AND log_type = 'TIME IN'
-            `).all(input);
+            `).all(input, todayLocal);
 
             // Log them ALL out instantly
             const insertOut = db.prepare(`INSERT INTO visitor_logs (badge_code, visitor_name, log_type) VALUES (?, ?, 'TIME OUT')`);
@@ -209,7 +219,6 @@ ipcMain.handle('process-attendance', async (event, code) => {
         }
         // ==========================================================
 
-
         // 2. Exact Match Search (Now only looks for Students)
         let student = db.prepare("SELECT * FROM students WHERE student_code = ?").get(input);
         
@@ -226,35 +235,38 @@ ipcMain.handle('process-attendance', async (event, code) => {
         }
 
         // If STILL not found after trying Visitors AND Students...
-if (!student) {
-    // We use TRIM to remove accidental spaces and COLLATE NOCASE for safety
-    const masterBadge = db.prepare(`
-        SELECT * FROM master_badges 
-        WHERE TRIM(badge_code) COLLATE NOCASE = TRIM(?)
-    `).get(input);
+        if (!student) {
+            // We use TRIM to remove accidental spaces and COLLATE NOCASE for safety
+            const masterBadge = db.prepare(`
+                SELECT * FROM master_badges 
+                WHERE TRIM(badge_code) COLLATE NOCASE = TRIM(?)
+            `).get(input);
 
-    if (masterBadge) {
-        console.log(`🎫 SUCCESS: Master Badge Found [${input}]. Teleporting...`);
-        return { success: false, action: "REGISTER_VISITOR", badgeCode: input }; 
-    }
+            if (masterBadge) {
+                console.log(`🎫 SUCCESS: Master Badge Found [${input}]. Teleporting...`);
+                return { success: false, action: "REGISTER_VISITOR", badgeCode: input }; 
+            }
 
-    // If we reach here, it TRULY isn't in the database
-    console.log("❌ CRITICAL: Record not found in any table.");
-    return { success: false, error: `[${input}] not found. Unregistered Card.` };
-}
+            // If we reach here, it TRULY isn't in the database
+            console.log("❌ CRITICAL: Record not found in any table.");
+            return { success: false, error: `[${input}] not found. Unregistered Card.` };
+        }
 
         console.log(`✅ STUDENT MATCH: ${student.full_name} (DB ID: [${student.student_code}])`);
 
         if (student.status === 0) return { success: false, error: "Student is marked as Inactive/Dropped." };
 
-        // Determine Student IN or OUT
+        // ==========================================================
+        //  Determine Student IN or OUT (THE BLANK SLATE FIX) 
+        // ==========================================================
         const lastLog = db.prepare(`
             SELECT log_type FROM student_logs 
             WHERE student_id = ? 
-            AND date(timestamp, 'localtime') = date('now', 'localtime') 
+            AND date(timestamp) = ? 
             ORDER BY id DESC LIMIT 1
-        `).get(student.id);
+        `).get(student.id, todayLocal);
 
+        // If they scanned IN *today*, make this a TIME OUT. Otherwise, fresh TIME IN!
         const newLogType = (lastLog && lastLog.log_type === 'TIME IN') ? 'TIME OUT' : 'TIME IN';
 
         // Save Student Log
