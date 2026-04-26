@@ -10,68 +10,83 @@
 
     <div id="loading-overlay" class="hidden">
         <div class="spinner"></div>
-        <h3 id="loading-text" style="margin-top: 20px; font-weight: 700; letter-spacing: 1px;">Processing...</h3>
+        <h3 id="loading-text">Processing...</h3>
     </div>
 
     <aside class="sidebar">
-        <div class="brand">
-            <div class="logo-circle">
-                <img src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/50/27ae60/ffffff?text=SJ'">
+            <div class="brand">
+                <div class="logo-circle">
+                    <img src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/48/10b981/ffffff?text=SJ'">
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">SJSFI</span>
+                    <span class="brand-subtitle">Library Attendance System</span>
+                </div>
             </div>
-            <div class="brand-text">
-                <span class="brand-title">SJSFI</span>
-                <span class="brand-subtitle">Library Attendance</span>
-            </div>
-        </div>
         
         <nav>
-            <a href="attendance.html" class="menu-item"><i class='bx bx-scan'></i> Attendance Scanner</a>
-            <a href="manage.html" class="menu-item"><i class='bx bx-user-pin'></i> Student Roster</a>
-            <a href="reports.html" class="menu-item"><i class='bx bx-bar-chart-alt-2'></i> Reports</a>
-            <a href="add-students.html" class="menu-item active"><i class='bx bxs-user-detail'></i> Add Students</a>
+            <a href="attendance.html" class="menu-item">
+                <i class='bx bx-scan'></i> Scanner Mode
+            </a>
+            <a href="manage.html" class="menu-item">
+                <i class='bx bx-user-pin'></i> Student Roster
+            </a>
+            <a href="reports.html" class="menu-item">
+                <i class='bx bx-bar-chart-alt-2'></i> Analytics & Reports
+            </a>
+            <a href="add-students.html" class="menu-item active">
+                <i class='bx bxs-user-detail'></i> Manage Students
+            </a>
         </nav>
     </aside>
 
     <main class="main-content">
+        
         <div class="header-container">
             <a href="manage.html" class="btn-back">
-                <i class='bx bx-left-arrow-alt' style="font-size: 20px;"></i> Back to Student Roster
+                <i class='bx bx-left-arrow-alt'></i> Back to Roster
             </a>
             
-            <div style="display: flex; gap: 10px;">
-                <button type="button" id="openBadgeModalBtn" class="btn-import" style="background: #e67e22; border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+            <div style="display: flex; gap: 12px;">
+                <button type="button" id="openBadgeModalBtn" class="btn-import btn-visitor">
                     <i class='bx bx-id-card'></i> Visitors Cards (RFID)
                 </button>
                 
-                <button type="button" id="importCsvBtn" class="btn-import" onclick="handleImportCSV()">
+                <button type="button" id="importCsvBtn" class="btn-import btn-csv" onclick="handleImportCSV()">
                     <i class='bx bx-upload'></i> Import CSV
                 </button>
             </div>
         </div>
 
         <div class="card">
-            <h2><i class='bx bx-user-plus'></i> Enroll New Student</h2>
-            <p>Register a student to the library database to enable RFID scanning.</p>
+            <div class="card-header">
+                <h2><i class='bx bx-user-plus'></i> Enroll New Student</h2>
+                <p>Register a student to the library database to enable RFID scanning.</p>
+            </div>
             
             <form id="addForm">
                 <div class="form-group">
                     <label>Student ID / RFID Code (10 Digits)</label>
-                    <input type="text" id="code" placeholder="" maxlength="10" autocomplete="off">
+                    <input type="text" id="code" class="modern-input" placeholder="e.g. 1234567890" maxlength="10" autocomplete="off">
                     <span id="codeError" class="error-text"></span>
                 </div>
                 
                 <div class="form-group">
                     <label>Full Name</label>
-                    <input type="text" id="name" placeholder="" autocomplete="off">
+                    <input type="text" id="name" class="modern-input" placeholder="Last Name, First Name" autocomplete="off">
                     <span id="nameError" class="error-text"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Grade Level</label>
-                    <select id="grade">
+                    <select id="grade" class="modern-select">
                         <option value="" disabled selected>Select Grade</option>
-                        <option value="1">Grade 1</option><option value="2">Grade 2</option><option value="3">Grade 3</option>
-                        <option value="4">Grade 4</option><option value="5">Grade 5</option><option value="6">Grade 6</option>
+                        <option value="1">Grade 1</option>
+                        <option value="2">Grade 2</option>
+                        <option value="3">Grade 3</option>
+                        <option value="4">Grade 4</option>
+                        <option value="5">Grade 5</option>
+                        <option value="6">Grade 6</option>
                     </select>
                 </div>
 
@@ -83,7 +98,7 @@
                             <img id="previewImage" src="">
                         </div>
                         <div class="upload-input-area">
-                            <input type="file" id="pf" accept="image/png, image/jpeg, image/jpg" style="width: 100%; cursor: pointer;">
+                            <input type="file" id="pf" class="modern-file-input" accept="image/png, image/jpeg, image/jpg">
                         </div>
                     </div>
                 </div>
@@ -93,36 +108,37 @@
         </div>
     </main>
 
-    <div id="customModal" class="modal-overlay">
-        <div class="modal-box">
+    <div id="customModal" class="custom-modal-overlay">
+        <div class="custom-modal" style="max-width: 400px; text-align: center; padding: 40px 30px;">
             <div id="modalIcon" class="modal-icon"></div>
-            <h3 id="modalTitle">Title</h3>
-            <p id="modalMessage">Message goes here.</p>
-            <button id="modalBtn" onclick="closeModal()" class="btn-modal">Done</button>
+            <h3 id="modalTitle" style="margin-bottom: 10px; font-size: 24px; color: var(--text-primary); font-weight: 800;">Title</h3>
+            <p id="modalMessage" style="margin-bottom: 25px; color: var(--text-secondary); line-height: 1.5;">Message goes here.</p>
+            <button id="modalBtn" onclick="closeModal()" class="btn-confirm" style="width: 100%;">Done</button>
         </div>
     </div>
 
-    <div id="masterBadgeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center;">
-        <div style="background: white; width: 90%; max-width: 480px; border-radius: 12px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <div id="masterBadgeModal" class="custom-modal-overlay">
+        <div class="custom-modal" style="max-width: 480px;">
             
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 15px;">
-                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #1e293b; font-size: 18px;">
-                    <i class='bx bx-id-card' style="color: #e67e22; font-size: 24px;"></i> Manage Visitors Card
-                </h3>
-                <i id="closeBadgeModalBtn" class='bx bx-x' style="font-size: 26px; cursor: pointer; color: #94a3b8; transition: 0.2s;" onmouseover="this.style.color='red'" onmouseout="this.style.color='#94a3b8'"></i>
+            <div class="modal-header">
+                <h3><i class='bx bx-id-card' style="color: #f97316;"></i> Manage Visitors Cards</h3>
+                <button id="closeBadgeModalBtn" class="close-btn"><i class='bx bx-x'></i></button>
             </div>
 
-            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <input type="text" id="newBadgeInput" placeholder="Scan RFID (10 digits)" maxlength="10" inputmode="numeric" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace;">
-                <button type="button" id="submitNewBadgeBtn" style="background: #27ae60; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">Add</button>
-            </div>
-            
-            <div id="badgeFormStatus" style="font-size: 12px; height: 16px; margin-bottom: 15px; font-weight: bold;"></div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="newBadgeInput" class="modern-input" placeholder="Scan RFID (10 digits)" maxlength="10" inputmode="numeric" style="flex: 1; font-family: monospace; letter-spacing: 1px;">
+                    <button type="button" id="submitNewBadgeBtn" class="btn-confirm" style="flex: 0 0 auto; padding: 0 20px;">Add</button>
+                </div>
+                
+                <div id="badgeFormStatus" class="badge-status-text"></div>
 
-            <div style="font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase;">Active Visitor Passes</div>
-            
-            <div id="badgeListContainer" style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; padding: 5px;">
+                <div class="badge-list-title">Active Visitor Passes</div>
+                
+                <div id="badgeListContainer" class="badge-list-container">
+                    </div>
             </div>
+            
         </div>
     </div>
 

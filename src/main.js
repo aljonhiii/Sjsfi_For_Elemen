@@ -148,7 +148,7 @@ ipcMain.handle('process-attendance', async (event, code) => {
         return { success: false, error: "Can't scan while viewing an archived school year. Please switch back to Current Year." };
     }
 
-try {
+    try {
         const db = dbManager.getReportDb(); 
         const input = code.trim(); // Clean the input
 
@@ -168,12 +168,12 @@ try {
         // ==========================================================
         // 🌟 STEP 1.5: VISITOR CHECKOUT INTERCEPT 🌟
         // ==========================================================
-        // Notice we replaced 'localtime' with our bulletproof todayLocal variable
+        // 🛠️ ADDED 'localtime' HERE
         const latestBadgeLog = db.prepare(`
             SELECT log_type 
             FROM visitor_logs 
             WHERE badge_code COLLATE NOCASE = ? 
-            AND date(timestamp) = ?
+            AND date(timestamp, 'localtime') = ?
             ORDER BY id DESC LIMIT 1
         `).get(input, todayLocal);
 
@@ -182,13 +182,14 @@ try {
             console.log(`✅ VISITOR BADGE MATCH: Checking out group [${input}]`);
             
             // Find the exact people who are currently signed in with this badge TODAY
+            // 🛠️ ADDED 'localtime' HERE
             const groupMembers = db.prepare(`
                 SELECT visitor_name 
                 FROM visitor_logs 
                 WHERE badge_code COLLATE NOCASE = ? 
                 AND id IN (
                     SELECT MAX(id) FROM visitor_logs 
-                    WHERE date(timestamp) = ? 
+                    WHERE date(timestamp, 'localtime') = ? 
                     GROUP BY visitor_name COLLATE NOCASE
                 )
                 AND log_type = 'TIME IN'
@@ -259,10 +260,11 @@ try {
         // ==========================================================
         //  Determine Student IN or OUT (THE BLANK SLATE FIX) 
         // ==========================================================
+        // 🛠️ ADDED 'localtime' HERE
         const lastLog = db.prepare(`
             SELECT log_type FROM student_logs 
             WHERE student_id = ? 
-            AND date(timestamp) = ? 
+            AND date(timestamp, 'localtime') = ? 
             ORDER BY id DESC LIMIT 1
         `).get(student.id, todayLocal);
 

@@ -35,11 +35,18 @@ async function toggleArchiveView() {
     const btn = document.getElementById('toggleArchiveBtn');
     const headerTitle = document.querySelector('.header h1'); // Adjust selector to match your title
 
+    // 🌟 THIS IS THE MAGIC LINE: Toggles the global red theme in CSS!
+    document.body.classList.toggle('recycle-mode');
+
     if (isArchiveView) {
         // --- MODE: RECYCLE BIN ---
-        btn.innerHTML = "<i class='bx bx-undo'></i> Back to Roster";
-        btn.classList.add('btn-archive-active'); // We'll add a red style in CSS
-        if (headerTitle) headerTitle.innerText = "Recycle Bin";
+        btn.innerHTML = `<i class='bx bx-undo'></i> Back to Roster`;
+        btn.classList.add('btn-archive-active'); 
+        
+        // Fix: Use innerHTML and backticks. No need for style="color: red;" because CSS handles it!
+        if (headerTitle) {
+            headerTitle.innerHTML = `<i class='bx bx-trash'></i> Deleted Students Interface`;
+        }
 
         const response = await window.api.getDeletedStudents();
         if (response.success) {
@@ -49,9 +56,12 @@ async function toggleArchiveView() {
         }
     } else {
         // --- MODE: ACTIVE ROSTER ---
-        btn.innerHTML = "<i class='bx bx-trash'></i> View Recycle Bin";
+        btn.innerHTML = `<i class='bx bx-recycle'></i> View Recycle Bin`;
         btn.classList.remove('btn-archive-active');
-        if (headerTitle) headerTitle.innerText = "Student Roster";
+        
+        if (headerTitle) {
+            headerTitle.innerHTML = `Student Roster`;
+        }
 
         loadStudents(); // Your original function that calls get-students (status = 1)
     }

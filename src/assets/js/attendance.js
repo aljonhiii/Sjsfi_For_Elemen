@@ -115,26 +115,28 @@ let lastSuccessfulProfile = EMPTY_STATE_HTML;
 
                     return; 
                 }
-                // ==========================================================
 
-              // ==========================================================
-const isOnlyNumbers = /^\d+$/.test(code);
+                // 🌟 STEP 1.5: THE SMART FILTER 🌟
 
-if (code.length !== 10 || !isOnlyNumbers) {
-    errorSound.currentTime = 0;
-    errorSound.play().catch(() => {});
-    
-    statusMessage.innerHTML = `<span class="scan-error" style="color: var(--danger-color); font-weight: bold;"><i class='bx bx-error-circle'></i> Invalid ID Format</span>`;
-    scanResultContent.innerHTML = `<div style="color: var(--danger-color); padding: 20px; text-align: center; font-weight: bold;">Please scan the ID properly.</div>`;
-    
-    // Reset scanner quickly
-    setTimeout(() => {
-        statusMessage.innerHTML = ``;
-        scanResultContent.innerHTML = lastSuccessfulProfile;
-    }, 1500);
-    
-    return; // 🛑 Stop the code from going to the database
-}
+                const isOnlyNumbers = /^\d+$/.test(code);
+                const isPotentialStudent = (code.length === 10 && isOnlyNumbers);
+
+                // If it's NOT a student ID AND it doesn't look like a Visitor ID (starts with V)
+                // we block it. If it starts with 'V' or 'v', we let it pass to the backend!
+                if (!isPotentialStudent && !code.toUpperCase().startsWith('V')) {
+                    errorSound.currentTime = 0;
+                    errorSound.play().catch(() => {});
+                    
+                    statusMessage.innerHTML = `<span class="scan-error" style="color: var(--danger-color); font-weight: bold;"><i class='bx bx-error-circle'></i> Invalid ID Format</span>`;
+                    scanResultContent.innerHTML = `<div style="color: var(--danger-color); padding: 20px; text-align: center; font-weight: bold;">Please scan a valid Student or Visitor ID.</div>`;
+                    
+                    setTimeout(() => {
+                        statusMessage.innerHTML = ``;
+                        scanResultContent.innerHTML = lastSuccessfulProfile;
+                    }, 1500);
+                    
+                    return; 
+                }
 
                 if (isScannerLocked) return; 
 
@@ -213,27 +215,46 @@ let newProfileHTML = '';
                             ).join('');
                             
                             // 🎫 2. COMPACT GREEN VISITOR CARD HTML
+// 🎫 2. CLEAN & MINIMAL VISITOR CARD HTML (NO SCROLLBAR)
                             newProfileHTML = `
-                                <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; padding: 0; max-width: 340px; margin: 0 auto;">
-                                    <div style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 20px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; width: 100%;">
-                                        <div style="background: rgba(255,255,255,0.25); padding: 4px 12px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-top: 8px; letter-spacing: 1px;">
-                                            RFID: ${result.studentCode}
+                                <style>
+                                    /* 🌟 Hide scrollbar for Chrome, Safari and Opera */
+                                    .no-scrollbar::-webkit-scrollbar {
+                                        display: none;
+                                    }
+                                    /* 🌟 Hide scrollbar for IE, Edge and Firefox */
+                                    .no-scrollbar {
+                                        -ms-overflow-style: none;  /* IE and Edge */
+                                        scrollbar-width: none;  /* Firefox */
+                                    }
+                                </style>
+                                <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; padding: 0; max-width: 340px; margin: 0 auto; background: white; display: flex; flex-direction: column;">
+                                    
+                                    <div style="padding: 30px 20px 15px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafdfb; border-bottom: 1px solid var(--border-color);">
+                                        <img src="assets/images/sjsfi_school_logo.png" onerror="this.src='https://via.placeholder.com/80/27ae60/ffffff?text=SJ'" style="width: 90px; height: 90px; object-fit: contain; margin-bottom: 15px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.08));">
+                                        <div style="font-size: 16px; font-weight: 900; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 1.5px;">
+                                            Visitor Pass
                                         </div>
                                     </div>
-                                    <div class="modern-card-overlay" style="padding: 15px 20px; width: 100%; box-sizing: border-box;">
-                                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; margin-bottom: 12px; text-align: left; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
-                                            Logged Out Guests (${result.visitorNames.length})
+
+                                    <div style="padding: 20px; flex: 1; display: flex; flex-direction: column; background: white;">
+                                        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 800; margin-bottom: 15px; text-align: center; letter-spacing: 1px;">
+                                            Guest(s)
                                         </div>
-                                        <div style="width: 100%; max-height: 160px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
+                                        <div class="no-scrollbar" style="width: 100%; max-height: 180px; overflow-y: auto; margin-bottom: 10px;">
                                             ${namesList}
                                         </div>
-                                        <div class="modern-card-tags" style="justify-content: center; gap: 8px;">
-                                            <div class="modern-tag ${badgeClass}" style="padding: 4px 10px; font-size: 11px;">
-                                                <i class='bx bx-scan'></i> ${result.logType}
-                                            </div>
-                                            <div class="modern-tag" style="padding: 4px 10px; font-size: 11px;"><i class='bx bx-time'></i> ${timeString}</div>
+                                    </div>
+
+                                    <div style="padding: 15px 20px; background: #fafdfb; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 10px;">
+                                        <div class="modern-tag ${badgeClass}" style="padding: 6px 14px; font-size: 12px; font-weight: bold;">
+                                            <i class='bx bx-scan'></i> ${result.logType}
+                                        </div>
+                                        <div class="modern-tag" style="padding: 6px 14px; font-size: 12px; background: #e2e8f0; color: #475569; font-weight: bold;">
+                                            <i class='bx bx-time'></i> ${timeString}
                                         </div>
                                     </div>
+
                                 </div>
                             `;
 
