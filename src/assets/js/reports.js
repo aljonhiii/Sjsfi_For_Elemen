@@ -7,7 +7,16 @@
         // This will hold the encoded image data so PDF never loses the picture!
         let base64Logo = ""; 
 
+
+
+
+
+        let allFetchedLogsData = []; // Master copy of fetched logs
+
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+        let allFetchedSummaryData = []; // Master copy of computed time summaries   
         
         // Turns on the loading screen and changes the text
         function showLoading(message = "Processing...") {
@@ -106,9 +115,8 @@ async function loadLogs() {
         await sleep(300);
         const response = await window.api.getLogsRange(start, end);
         if(response.success) {
-            currentLogsData = response.data;
-            currentPage = 1;
-            renderLogsTable();
+            allFetchedLogsData = response.data;
+            filterLogsTable();
         } else {
             alert("Database Error: " + response.error);
         }
@@ -117,6 +125,35 @@ async function loadLogs() {
     } finally {
         hideLoading();
     }
+}
+
+
+function filterLogsTable() {
+    const searchText = (document.getElementById('searchLogs')?.value || '').toLowerCase();
+    const deptFilter = document.getElementById('deptFilterLogs')?.value || 'ALL';
+
+    // Filter the master copy down into currentLogsData
+    currentLogsData = allFetchedLogsData.filter(log => {
+        // 1. Check Search Box (by Name)
+        const studentName = (log.full_name || '').toLowerCase();
+        const matchesSearch = studentName.includes(searchText);
+
+        // 2. Check Department Dropdown
+        let matchesDept = false;
+        if (deptFilter === 'ALL') {
+            matchesDept = true;
+        } else if (deptFilter === 'VISITOR') {
+            matchesDept = (log.user_type === 'VISITOR');
+        } else {
+            matchesDept = (log.user_type !== 'VISITOR') && isGradeInDept(log.grade_level, deptFilter);
+        }
+
+        return matchesSearch && matchesDept;
+    });
+
+    // Reset pagination and redraw the table
+    currentPage = 1;
+    renderLogsTable();
 }
 
 function renderLogsTable() {
@@ -197,23 +234,19 @@ async function exportLogsPDF() {
                 let fullTableRows = "";
                 let rowCount = 0;
 
-                // 2. Loop through logs and apply the Smart Filter (Visitors included!)
-                currentLogsData.forEach(log => {
-                    
-                    // Filter Logic:
-                    if (selectedDept === 'VISITOR') {
-                        if (log.user_type !== 'VISITOR') return; // Skip students if we only want visitors
-                    } else if (selectedDept !== 'ALL') {
-                        if (log.user_type === 'VISITOR') return; // Skip visitors if we selected a specific student grade
-                        if (!isGradeInDept(log.grade_level, selectedDept)) return; // Skip students not in the grade
-                    }
 
+//              FIX: Ignore the search bar, filter only by department!
+                allFetchedLogsData.filter(log => {
+                    const deptFilter = document.getElementById('deptFilterLogs')?.value || 'ALL';
+                    if (deptFilter === 'ALL') return true;
+                    if (deptFilter === 'VISITOR') return log.user_type === 'VISITOR';
+                    return log.user_type !== 'VISITOR' && isGradeInDept(log.grade_level, deptFilter);
+                }).forEach(log => {
                     const dateObj = new Date(log.timestamp);
                     const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const dateStr = dateObj.toLocaleDateString();
                     const typeColor = log.log_type.includes('IN') ? '#27ae60' : '#d63031';
                     
-                    // 🌟 CLEAN TEXT LABEL FOR PDF 🌟
                     const roleLabel = log.user_type === 'VISITOR' 
                         ? `<span style="color: #f39c12; font-size: 11px; font-weight: bold; margin-left: 4px;"></span>` 
                         : `<span style="color: #1420c9; font-size: 11px; font-weight: bold; margin-left: 4px;"></span>`;
@@ -226,7 +259,6 @@ async function exportLogsPDF() {
                     </tr>`;
                     rowCount++;
                 });
-
                 // 3. If no records match the filter, stop here
                 if (rowCount === 0) {
                     alert(`No records found for ${selectedDept} in this date range.`);
@@ -375,101 +407,138 @@ async function exportLogsPDF() {
         // ==========================================
         // SECTION 2: SUMMARY LOGIC & EXPORTS
         // ==========================================
-        async function loadSummary() {
+async function loadSummary() {
     const start = document.getElementById('sumStart').value;
     const end = document.getElementById('sumEnd').value;
     
-    // 🌟 TIMEZONE FIX: Build "Today" using the Local Zamboanga Clock
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const todayLocal = `${year}-${month}-${day}`;
 
-    // Use todayLocal for safe mathematical string comparison
     if (end > todayLocal) { alert("End Date cannot be in the future!"); return; }
     if (start > end) { alert("Start Date cannot be after End Date!"); return; }
 
-    const response = await window.api.getLogsRange(start, end);
-    const tbody = document.getElementById('summaryTable');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    currentSummaryData = []; 
-
-    if(response.success && response.data.length > 0) {
-        const summary = {};
+    showLoading("Computing total hours...");
+    try {
+        const response = await window.api.getLogsRange(start, end);
         
-        // Ensure data is sorted chronological (oldest to newest) for accurate time math
-        const sortedData = response.data.reverse(); 
+        if(response.success && response.data.length > 0) {
+            const summary = {};
+            const sortedData = response.data.reverse(); 
 
-        sortedData.forEach(log => {
-            // Skip visitors for summary calculation
-            if (log.user_type === 'VISITOR') return; 
-
-            // 🌟 MATH FIX: Group by 'student_code' so IN and OUT match the same person!
-            const sCode = log.student_code; 
-
-            if(!summary[sCode]) summary[sCode] = { name: log.full_name, grade: log.grade_level, total: 0, lastIn: null };
+            // 1. Math Phase: Calculate everyone's hours
+            sortedData.forEach(log => {
+                if (log.user_type === 'VISITOR') return; 
+                const sCode = log.student_code; 
+                if(!summary[sCode]) summary[sCode] = { name: log.full_name, grade: log.grade_level, total: 0, lastIn: null };
+                
+                if(log.log_type === 'TIME IN') {
+                    summary[sCode].lastIn = new Date(log.timestamp);
+                } 
+                else if(log.log_type === 'TIME OUT' && summary[sCode].lastIn) {
+                    summary[sCode].total += (new Date(log.timestamp) - summary[sCode].lastIn);
+                    summary[sCode].lastIn = null; 
+                }
+            });
             
-            if(log.log_type === 'TIME IN') {
-                summary[sCode].lastIn = new Date(log.timestamp);
-            } 
-            else if(log.log_type === 'TIME OUT' && summary[sCode].lastIn) {
-                summary[sCode].total += (new Date(log.timestamp) - summary[sCode].lastIn);
-                summary[sCode].lastIn = null; // Reset for their next visit
-            }
-        });
-        
-        Object.values(summary).forEach(s => {
-            // Only show students who actually completed a visit (total > 0)
-            if (s.total > 0) {
-                const hours = Math.floor(s.total / 3600000);
-                const mins = Math.floor((s.total % 3600000) / 60000);
-                
-                // Format nicely: e.g., "1h 5m" or just "45m"
-                let timeString = '';
-                if (hours > 0) timeString += `${hours}h `;
-                timeString += `${mins}m`;
-                
-                currentSummaryData.push({ name: s.name, grade: s.grade, time: timeString });
-                
-                tbody.innerHTML += `<tr>
-                    <td><strong style="color: var(--primary-dark);">${s.name}</strong></td>
-                    <td>${s.grade}</td>
-                    <td><strong style="color: var(--primary-color);">${timeString}</strong></td>
-                </tr>`;
-            }
-        });
-        
-        if (currentSummaryData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No completed library sessions found.</td></tr>';
+            // 2. Data Formatting Phase: Store the clean data in the master array
+            allFetchedSummaryData = [];
+            Object.values(summary).forEach(s => {
+                if (s.total > 0) {
+                    const hours = Math.floor(s.total / 3600000);
+                    const mins = Math.floor((s.total % 3600000) / 60000);
+                    let timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                    
+                    allFetchedSummaryData.push({ name: s.name, grade: s.grade, time: timeString });
+                }
+            });
+            
+            // 3. Trigger the filter to draw the table!
+            filterSummaryTable();
+            
+        } else { 
+            const tbody = document.getElementById('summaryTable');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No data found.</td></tr>'; 
+            currentSummaryData = [];
         }
-    } else { 
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No data found.</td></tr>'; 
+    } finally {
+        hideLoading();
     }
 }
 
+
+function filterSummaryTable() {
+    const searchText = (document.getElementById('searchSummary')?.value || '').toLowerCase();
+    const deptFilter = document.getElementById('deptFilterSummary')?.value || 'ALL';
+
+    // Filter master list into current memory
+    currentSummaryData = allFetchedSummaryData.filter(student => {
+        const matchesSearch = student.name.toLowerCase().includes(searchText);
+        let matchesDept = (deptFilter === 'ALL') ? true : isGradeInDept(student.grade, deptFilter);
+        
+        return matchesSearch && matchesDept;
+    });
+
+    renderSummaryTable();
+}
+
+
+function renderSummaryTable() {
+    const tbody = document.getElementById('summaryTable');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    
+    if (currentSummaryData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No completed library sessions match your filters.</td></tr>';
+        return;
+    }
+
+    currentSummaryData.forEach(s => {
+        tbody.innerHTML += `<tr>
+            <td><strong style="color: var(--primary-dark);">${s.name}</strong></td>
+            <td>Grade ${s.grade}</td>
+            <td><strong style="color: var(--primary-color);">${s.time}</strong></td>
+        </tr>`;
+    });
+}
+
         // --- PDF SUMMARY ---
+// --- PDF SUMMARY ---
         async function exportSummaryPDF() {
             const start = document.getElementById('sumStart').value;
             const end = document.getElementById('sumEnd').value;
+            const deptFilter = document.getElementById('deptFilterSummary')?.value || 'ALL';
 
-            if (currentSummaryData.length === 0) {
+            if (allFetchedSummaryData.length === 0) {
                 alert("Please click 'Compute' to load the data before exporting!"); return;
             }
 
             showLoading('Exporting Pdf for Summary');
             try {
-                await sleep(2000);
+                await sleep(1000);
                 let fullTableRows = "";
-                currentSummaryData.forEach(row => {
+                let rowCount = 0;
+
+                // 🌟 FIX: Option 2 Logic - Ignore the search bar, filter by Dropdown only!
+                allFetchedSummaryData.filter(student => {
+                    if (deptFilter === 'ALL') return true;
+                    return isGradeInDept(student.grade, deptFilter);
+                }).forEach(row => {
                     fullTableRows += `<tr>
                         <td><b>${row.name}</b></td>
                         <td>Grade ${row.grade}</td>
                         <td style="color: #1e8449; font-weight: bold;">${row.time}</td>
                     </tr>`;
+                    rowCount++;
                 });
+
+                if (rowCount === 0) {
+                    alert(`No records found for ${deptFilter} in this date range.`);
+                    return;
+                }
 
                 const imageTag = base64Logo ? `<img src="${base64Logo}" width="80" height="80" style="margin-bottom: 10px; object-fit: contain;">` : '';
 
@@ -481,46 +550,12 @@ async function exportLogsPDF() {
                             body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #000; margin: 0; }
                             
                             /* --- SCHOOL LETTERHEAD DESIGN --- */
-                            .school-header {
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                gap: 15px;
-                                margin-bottom: 20px;
-                                padding-bottom: 15px;
-                            }
-                            .logo-container img {
-                                width: 85px;
-                                height: 85px;
-                                object-fit: contain;
-                            }
-                            .text-container {
-                                display: flex;
-                                flex-direction: column;
-                            }
-                            .chinese-text {
-                                font-size: 16px;
-                                font-weight: bold;
-                                margin-bottom: 2px;
-                                color: #000;
-                            }
-                            .school-name {
-                                font-size: 24px;
-                                font-family: 'Times New Roman', serif;
-                                font-weight: 800;
-                                margin: 0;
-                                color: #000;
-                                border-bottom: 2px solid #1e8449; 
-                                padding-bottom: 4px;
-                                margin-bottom: 4px;
-                                letter-spacing: 0.5px;
-                            }
-                            .contact-info {
-                                font-size: 11px;
-                                font-family: Arial, sans-serif;
-                                line-height: 1.4;
-                                color: #000;
-                            }
+                            .school-header { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; }
+                            .logo-container img { width: 85px; height: 85px; object-fit: contain; }
+                            .text-container { display: flex; flex-direction: column; }
+                            .chinese-text { font-size: 16px; font-weight: bold; margin-bottom: 2px; color: #000; }
+                            .school-name { font-size: 24px; font-family: 'Times New Roman', serif; font-weight: 800; margin: 0; color: #000; border-bottom: 2px solid #1e8449; padding-bottom: 4px; margin-bottom: 4px; letter-spacing: 0.5px; }
+                            .contact-info { font-size: 11px; font-family: Arial, sans-serif; line-height: 1.4; color: #000; }
 
                             /* --- REPORT TITLE --- */
                             .report-title { text-align: center; margin-bottom: 20px; }
@@ -533,31 +568,16 @@ async function exportLogsPDF() {
                             td { border: 1px solid #d1e8d8; padding: 8px 10px; font-size: 12px; }
 
                             /* --- REPEATING PDF MAGIC --- */
-                            @media print {
-                                thead { display: table-header-group; }
-                                tfoot { display: table-footer-group; }
-                            }
+                            @media print { thead { display: table-header-group; } tfoot { display: table-footer-group; } }
                             
-                            .sig-container {
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: flex-end;
-                                padding-top: 40px; 
-                            }
+                            .sig-container { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 40px; }
                             .sig-box { text-align: center; }
-                            .sig-line {
-                                border-bottom: 1px solid #000;
-                                width: 180px;
-                                height: 30px; 
-                                margin-bottom: 5px;
-                            }
+                            .sig-line { border-bottom: 1px solid #000; width: 180px; height: 30px; margin-bottom: 5px; }
                         </style>
                     </head>
                     <body>
                         <div class="school-header">
-                            <div class="logo-container">
-                                ${imageTag}
-                            </div>
+                            <div class="logo-container">${imageTag}</div>
                             <div class="text-container">
                                 <span class="chinese-text">三寶顏忠義中學</span>
                                 <h1 class="school-name">SAINT JOSEPH SCHOOL FOUNDATION, INC.</h1>
@@ -570,18 +590,16 @@ async function exportLogsPDF() {
 
                         <div class="report-title">
                             <h2>Time Summary Report</h2>
-                            <p>Period: <b>${start}</b> to <b>${end}</b></p>
+                            <p>Dept: <b>${deptFilter}</b> | Period: <b>${start}</b> to <b>${end}</b></p>
                         </div>
 
                         <table>
                             <thead>
                                 <tr><th>Student Name</th><th>Grade Level</th><th>Total Library Time</th></tr>
                             </thead>
-                            
                             <tbody>
                                 ${fullTableRows}
                             </tbody>
-                            
                             <tfoot>
                                 <tr>
                                     <td colspan="3" style="border: none;">
@@ -602,7 +620,7 @@ async function exportLogsPDF() {
                     </html>
                 `;
 
-                const fileName = `Library_Summary_${start}_to_${end}.pdf`;
+                const fileName = `Library_Summary_${deptFilter}_${start}_to_${end}.pdf`;
                 const result = await window.api.generatePDF(fileName, reportHTML);
                 if (result.success) alert("Summary PDF Saved Successfully!");
             } finally {

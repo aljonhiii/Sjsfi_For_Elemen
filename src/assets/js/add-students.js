@@ -309,13 +309,37 @@ async function saveNewBadge() {
     }
 }
 
-async function removeBadge(code) {
-    if(confirm(`Delete Master Badge: ${code}?`)) {
-        try {
-            await window.api.deleteMasterBadge(code);
-            loadMasterBadges();
-        } catch (err) {
-            console.error("Crash during remove:", err);
+    async function removeBadge(code) {
+        // 1. Ask for confirmation
+        if (confirm(`Are you sure you want to delete master badge: ${code}?`)) {
+            try {
+                // 2. Wait for the backend to finish deleting the record
+                const res = await window.api.deleteMasterBadge(code);
+                
+                if (res.success) {
+                    // 3. Log the action to your Audit Trail text file
+                    // This helps you track who deleted what and when
+                    if (window.api.saveAuditLog) {
+                        await window.api.saveAuditLog({
+                            action: "DELETE_MASTER_BADGE",
+                            details: `Deleted badge: ${code}`,
+                            user: currentActiveAdmin // From your global variable
+                        });
+                    }
+
+                    // 4. Refresh the UI list
+                    // We 'await' this so the app doesn't try to do anything else 
+                    // until the list is fully redrawn.
+                    await loadMasterBadges();
+                    window.location.reload();
+                    
+                } else {
+                    console.error("Delete failed:", res.error);
+                    alert("Could not delete badge. It might be in use.");
+                }
+            } catch (err) {
+                // This catches system crashes without freezing your UI
+                console.error("Critical crash during removeBadge:", err);
+            }
         }
     }
-}

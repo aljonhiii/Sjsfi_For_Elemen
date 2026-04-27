@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('api', {
     getActiveVisitors: () => ipcRenderer.invoke('get-active-visitors'),
     addMasterBadge: (code, desc) => ipcRenderer.invoke('add-master-badge', code, desc),
     getMasterBadges: () => ipcRenderer.invoke('get-master-badges'),
-    deleteMasterBadge: (code) => ipcRenderer.invoke('delete-master-badge', code)
+    deleteMasterBadge: (code) => ipcRenderer.invoke('delete-master-badge', code),
+    openAuditFile: () => ipcRenderer.invoke('open-audit-file')
 
 });

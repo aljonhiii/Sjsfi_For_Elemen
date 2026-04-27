@@ -36,7 +36,7 @@
             <h1>Reports Dashboard</h1>
         </div>
 
-        <div class="bento-grid">
+<div class="bento-grid">
             
             <div class="bento-card">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -48,10 +48,7 @@
                 </p>
                 <div style="display: flex; gap: 10px; margin-top: auto;">
                     <button onclick="openModal('dbModal')" class="btn-view" style="flex: 1; justify-content: center; background: #f8fafc; color: var(--text-primary); border: 1px solid var(--border-color);">
-                        <i class='bx bx-refresh'></i> Switch DB
-                    </button>
-                    <button onclick="window.api.openLogFile()" class="btn-view" style="flex: 1; justify-content: center; background: #f8fafc; color: var(--text-primary); border: 1px solid var(--border-color);">
-                        <i class='bx bx-terminal'></i> Logs
+                        <i class='bx bx-refresh'></i> Switch Database
                     </button>
                 </div>
             </div>
@@ -61,9 +58,30 @@
                     <i class='bx bx-shield-quarter'></i> System Archiving
                 </h4>
                 <p style="margin: 0; font-size: 13px; color: #7f1d1d; font-weight: 500;">Moving data to an archive will lock the current records. Proceed with caution.</p>
-<button onclick="openModal('archiveModal')" class="btn-view" style="margin-top: auto; justify-content: center; background: #f8fafc; color: var(--danger-color); border: 1px solid #fca5a5;">
-    <i class='bx bx-archive-in'></i> Open Archive Panel
-</button>
+                <button onclick="openModal('archiveModal')" class="btn-view" style="margin-top: auto; justify-content: center; background: #f8fafc; color: var(--danger-color); border: 1px solid #fca5a5;">
+                    <i class='bx bx-archive-in'></i> Open Archive Panel
+                </button>
+            </div>
+
+<div class="bento-card" style="grid-column: 1 / -1; margin: 0 auto; width: 100%; max-width: 500px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <h4 class="control-label" style="color: #475569;">
+                        <i class='bx bx-check-shield'></i> Security & Logs
+                    </h4>
+                    <span style="font-size: 10px; background: #e2e8f0; color: #475569; padding: 4px 8px; border-radius: 12px; font-weight: 700;">Tracking Active</span>
+                </div>
+                <p style="margin: 0; font-size: 13px; color: var(--text-secondary); font-weight: 500; margin-top: 5px;">
+                    Monitor admin actions and review system error reports.
+                </p>
+                
+                <div style="display: flex; gap: 10px; margin-top: auto;">
+                    <button onclick="window.api.openAuditFile()" class="btn-view" style="flex: 1; justify-content: center; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1;">
+                        <i class='bx bx-notepad'></i> Audit Trail
+                    </button>
+                    <button onclick="window.api.openLogFile()" class="btn-view" style="flex: 1; justify-content: center; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">
+                        <i class='bx bx-error-circle'></i> Error Logs
+                    </button>
+                </div>
             </div>
 
         </div>
@@ -72,16 +90,24 @@
             <div class="card-header"><i class='bx bx-history'></i> Attendance Logs</div>
             <p class="card-desc">View and export scan events for a specific date or date range.</p>
             
-            <div class="controls-bar">
-                <input type="date" id="logStart">
-                <span style="font-weight: 700; font-size: 13px; color: var(--text-secondary);">to</span>
-                <input type="date" id="logEnd">
-                <button class="btn-view" onclick="loadLogs()"><i class='bx bx-search'></i> View Data</button>
+<div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px solid var(--border-color);">
                 
-                <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
-                    <select id="deptFilterLogs" class="dept-select">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="date" id="logStart" class="modern-input" style="padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <span style="font-weight: 700; font-size: 13px; color: var(--text-secondary);">to</span>
+                    <input type="date" id="logEnd" class="modern-input" style="padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <button class="btn-view" onclick="loadLogs()"><i class='bx bx-cloud-download'></i> Fetch</button>
+                </div>
+
+                <div style="position: relative; flex: 1; min-width: 200px;">
+                    <i class='bx bx-search' style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 20px;"></i>
+                    <input type="text" id="searchLogs" class="modern-input" placeholder="Search name..." oninput="filterLogsTable()" style="width: 100%; padding: 10px 10px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box;">
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
+                    <select id="deptFilterLogs" class="dept-select" onchange="filterLogsTable()" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
                         <option value="ALL">All Departments</option>
-                        <option value="Elementary">Elementary </option>
+                        <option value="Elementary">Elementary</option>
                         <option value="VISITOR">Visitor</option>
                     </select>
 
@@ -110,18 +136,33 @@
             </div>
         </div>
 
-        <div class="card">
+<div class="card">
             <div class="card-header"><i class='bx bx-timer'></i> Time Summary Analytics</div>
             <p class="card-desc">Total computed library hours per student.</p>
             
-            <div class="controls-bar">
-                <input type="date" id="sumStart">
-                <span style="font-weight: 700; font-size: 13px; color: var(--text-secondary);">to</span>
-                <input type="date" id="sumEnd">
-                <button class="btn-view" onclick="loadSummary()"><i class='bx bx-calculator'></i> Compute Time</button>
+            <div class="controls-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px solid var(--border-color);">
                 
-                <div style="margin-left: auto;">
-                    <button class="btn-pdf" onclick="exportSummaryPDF()"><i class='bx bxs-file-pdf'></i> Export PDF</button>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="date" id="sumStart" class="modern-input" style="padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <span style="font-weight: 700; font-size: 13px; color: var(--text-secondary);">to</span>
+                    <input type="date" id="sumEnd" class="modern-input" style="padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px;">
+                    <button class="btn-view" onclick="loadSummary()"><i class='bx bx-calculator'></i> Compute</button>
+                </div>
+
+                <div style="position: relative; flex: 1; min-width: 200px;">
+                    <i class='bx bx-search' style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 20px;"></i>
+                    <input type="text" id="searchSummary" class="modern-input" placeholder="Search student name..." oninput="filterSummaryTable()" style="width: 100%; padding: 10px 10px 10px 40px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box;">
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
+                    <select id="deptFilterSummary" class="modern-select" onchange="filterSummaryTable()" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <option value="ALL">All Departments</option>
+                        <option value="Elementary">Elementary</option>
+                    </select>
+
+                    <button class="btn-pdf" onclick="exportSummaryPDF()">
+                        <i class='bx bxs-file-pdf'></i> Export PDF
+                    </button>
                 </div>
             </div>
             

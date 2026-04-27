@@ -5,6 +5,9 @@ const sqlite = require('better-sqlite3');
 const dbManager = require('./database.js'); // Dual-Connection Manager
 
 
+
+app.disableHardwareAcceleration();
+
 const log = require('electron-log');
 
 
@@ -14,6 +17,46 @@ const log = require('electron-log');
 // 1. GLOBAL PATHS & STATE
 
 let activeYearFile = 'current';
+
+
+// ==========================================
+// 🛡️ SYSTEM AUDIT TRAIL (TEXT FILE LOGGING)
+// ==========================================
+const auditFilePath = path.join(app.getPath('userData'), 'system_audit_trail.txt');
+
+// This is the engine that writes a new line to the text file
+function writeAuditLog(action, details, user = "Admin") {
+    try {
+        // Create a clean timestamp
+        const timestamp = new Date().toLocaleString('en-US', { 
+            year: 'numeric', month: 'short', day: '2-digit', 
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+        
+        // Format the text exactly how it will look in Notepad
+        const logLine = `[${timestamp}] USER: ${user} | ACTION: ${action} | DETAILS: ${details}\n`;
+
+        // Append to the file (creates it automatically if it doesn't exist)
+        fs.appendFileSync(auditFilePath, logLine, 'utf8');
+        
+        console.log(`🛡️ AUDIT WRITTEN: ${action}`);
+    } catch (error) {
+        log.error("Failed to write to audit txt file: ", error);
+    }
+}
+
+// Allow the Frontend button to open the text file in Notepad
+ipcMain.handle('open-audit-file', async () => {
+    try {
+        if (!fs.existsSync(auditFilePath)) {
+            fs.writeFileSync(auditFilePath, "=== SJSFI LIBRARY SYSTEM: AUDIT TRAIL ===\n\n", 'utf8');
+        }
+        await shell.openPath(auditFilePath);
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
 
 
 
@@ -298,6 +341,7 @@ ipcMain.handle('add-master-badge', async (event, badgeCode, description) => {
     try {
         const db = dbManager.getReportDb(); // Use your live DB connection
         db.prepare(`INSERT INTO master_badges (badge_code, description) VALUES (?, ?)`).run(badgeCode, description || 'Visitor Pass');
+        writeAuditLog("ADD_CODE", `Registered new vcode: ${badgeCode}`);
         return { success: true };
     } catch (err) {
         return { success: false, error: "Badge might already exist." };
@@ -320,6 +364,7 @@ ipcMain.handle('delete-master-badge', async (event, badgeCode) => {
     try {
         const db = dbManager.getReportDb();
         db.prepare(`DELETE FROM master_badges WHERE badge_code = ?`).run(badgeCode);
+        writeAuditLog("Deleted", `Deleted the badge: ${badgeCode}`);
         return { success: true };
     } catch (err) {
         return { success: false, error: err.message };
@@ -399,6 +444,10 @@ ipcMain.handle('add-student', async (event, studentData) => {
 
         const stmt = db.prepare(`INSERT INTO students (student_code, full_name, grade_level, profile_pic, status, addedAt) VALUES (?, ?, ?, ?, ?, ?)`);
         const info = stmt.run(student_code, full_name, grade_level, savedPicPath, status ? 1 : 0, addedAt);
+        
+  
+        writeAuditLog("ADD_STUDENT", `Registered new student: ${full_name} (${student_code})`);
+        
         return { success: true, id: info.lastInsertRowid };
     } catch (error) { // 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
@@ -436,6 +485,9 @@ ipcMain.handle('edit-student', async (event, studentData) => {
             db.prepare(`UPDATE students SET full_name = ?, grade_level = ?, status = ? WHERE id = ?`)
               .run(full_name, grade_level, status ? 1 : 0, id);
         }
+
+
+        writeAuditLog("EDIT_STUDENT", `Updated profile for student ID: ${full_name}`);
         return { success: true };
     } catch (error) { // 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
@@ -452,29 +504,27 @@ ipcMain.handle('delete-student', async (event, id) => {
     }; 
     try {
         const db = dbManager.getLiveDb();
-        const currentTime = new Date().toLocaleString('en-US', { 
-            year: 'numeric', month: 'short', day: 'numeric', 
-            hour: '2-digit', minute: '2-digit' 
-        });
+        const currentTime = new Date().toLocaleString('en-US');
 
-        console.log(`Attempting to delete ID: ${id} at ${currentTime}`);
+        // 🌟 NEW: Grab the student's name BEFORE we archive them!
+        const targetStudent = db.prepare('SELECT full_name FROM students WHERE id = ?').get(id);
+        const studentName = targetStudent ? targetStudent.full_name : `Unknown (ID: ${id})`;
 
         const result = db.prepare('UPDATE students SET status = 0, deletedAt = ? WHERE id = ?').run(currentTime, id);
 
         if (result.changes > 0) {
             console.log("✅ Success: Student archived.");
+            
+            // 🌟 NEW: Use the name we found in the Audit Log!
+            writeAuditLog("DELETE_STUDENT", `Archived/Deleted student: ${studentName}`);
+            
             return { success: true };
         } else {
-            console.log("⚠️ Warning: No student found with that ID.");
             return { success: false, error: "Student not found." };
         }
     } catch (error) { 
-// 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
-
-        // 2. We log the beautifully translated message to the text file
         log.error(`User Alert: ${friendlyMessage} | Tech Details: ${error.message}`);
-        
         return { success: false, error: friendlyMessage };
     }
 });
@@ -485,13 +535,24 @@ ipcMain.handle('restore-student', async (event, id) => {
     };
     try {
         const db = dbManager.getLiveDb();
+
+        // 🌟 1. Grab the student's name BEFORE we restore them!
+        const targetStudent = db.prepare('SELECT full_name FROM students WHERE id = ?').get(id);
+        const studentName = targetStudent ? targetStudent.full_name : `Unknown (ID: ${id})`;
         
-        // This looks perfect! 
-        db.prepare(`UPDATE students SET status = 1, deletedAt = NULL WHERE id = ?`).run(id);
+        // 🌟 2. Run the update to bring them back
+        const result = db.prepare(`UPDATE students SET status = 1, deletedAt = NULL WHERE id = ?`).run(id);
         
-        return { success: true };
+        // 🌟 3. Check if it worked, then log it! (Notice the backticks ` and matching variable name)
+        if (result.changes > 0) {
+            writeAuditLog("RESTORE_STUDENT", `Restored student profile: ${studentName}`);
+            return { success: true };
+        } else {
+            return { success: false, error: "Student not found." };
+        }
+
     } catch (error) { 
-// 1. We finally USE the tool right here! (This makes the warning disappear)
+        // 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
 
         // 2. We log the beautifully translated message to the text file
@@ -686,6 +747,9 @@ ipcMain.handle('generate-clean-pdf', async (event, fileName, htmlContent) => {
         const data = await workerWindow.webContents.printToPDF({ printBackground: true, pageSize: 'A4' });
         fs.writeFileSync(filePath, data);
         workerWindow.close();
+
+
+        writeAuditLog("EXPORT_PDF", `Generated and saved a PDF report to: ${filePath}`);
         return { success: true };
     } catch (error) { workerWindow.close(); // 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
@@ -707,7 +771,7 @@ ipcMain.handle('export-students-csv', async (event) => {
             title: 'Export Student Roster', defaultPath: 'student_roster.csv',
             filters: [{ name: 'CSV Files', extensions: ['csv'] }]
         });
-        if (filePath) { fs.writeFileSync(filePath, csvContent); return { success: true }; }
+        if (filePath) { fs.writeFileSync(filePath, csvContent);   writeAuditLog("EXPORT_CSV", `Exported active student roster to: ${filePath}`); return { success: true }; }
         return { success: false, error: 'Cancelled' };
     } catch (error) { // 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
@@ -783,6 +847,9 @@ const massImport = db.transaction((rows) => {
             }
             
             console.log(`✅ IMPORT COMPLETE: ${importCount} inserted, ${skippedCount} skipped.`);
+
+
+            writeAuditLog("IMPORT_CSV", `Mass imported ${importCount} students via CSV.`);
             return importCount;
         });
         return { success: true, count: massImport(lines) };
