@@ -3,13 +3,23 @@ const path = require('path');
 const fs = require('fs');
 const sqlite = require('better-sqlite3');
 const dbManager = require('./database.js'); // Dual-Connection Manager
-
-
-
 const log = require('electron-log');
 
+// 1. Stop the Squirrel installer from opening the app multiple times in the background
+if (require('electron-squirrel-startup')) app.quit();
+
+// 2. Set the unique App ID (Change 'elementary' to 'admin' for your other folder)
+app.setAppUserModelId("com.sjsfi.library.elementary");
+
+// 3. Force a unique data folder so both apps can be open at the exact same time
+const systemID = "LibrarySystem_Elementary_Instance"; // Change to Admin_Instance for your other folder
+const newUserDataPath = path.join(app.getPath('appData'), systemID);
+app.setPath('userData', newUserDataPath);
 
 
+
+
+// The rest of your code like app.whenReady().then(...) goes down here!
 
 
 // 1. GLOBAL PATHS & STATE

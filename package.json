@@ -1,7 +1,8 @@
 {
   "name": "sjsfi-library-attendance-system_elementary",
-  "version": "1.0.9",
-  "description": "Library Attendance System for SJSFI",
+  "version": "1.0.10",
+  "productName": "SJSFI FOR ELEMENTARY",
+  "description": "Library Attendance System SJSFI - for Elementary",
   "main": "src/main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -21,7 +22,8 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",
-    "electron-log": "^5.4.3"
+    "electron-log": "^5.4.3",
+    "electron-squirrel-startup": "^1.0.1"
   },
   "config": {
     "forge": {
@@ -32,8 +34,9 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "sjsfi_library_system",
-            "setupIcon": "./assets/icon.ico"
+            "name": "sjsfi_library_system_elementary",
+            "setupIcon": "./assets/icon.ico",
+            "loadingGif": "./assets/loadingwmsu.gif"
           }
         }
       ]
