@@ -406,7 +406,6 @@ ipcMain.handle('process-visitors', async (event, badgeCode, visitorsArray) => {
 
 
 // 4. STUDENT CRUD (Add, Edit, Delete, Get)
-
 ipcMain.handle('get-students', async () => {
     try {
         const db = dbManager.getReportDb(); // Supports Archives
@@ -588,7 +587,6 @@ ipcMain.handle('get-deleted-students', async () => {
 
 
 // 5. REPORTS & SESSION SWITCHING
-
 ipcMain.handle('get-logs', async (event, date) => {
     try {
         const db = dbManager.getReportDb(); 
@@ -765,9 +763,9 @@ ipcMain.handle('generate-clean-pdf', async (event, fileName, htmlContent) => {
 ipcMain.handle('export-students-csv', async (event) => {
     try {
         const db = dbManager.getReportDb(); 
-        const students = db.prepare(`SELECT student_code, full_name, grade_level, status FROM students`).all();
-        let csvContent = "student_code,full_name,grade_level,status\n";
-        students.forEach(s => csvContent += `"${s.student_code}","${s.full_name}","${s.grade_level}","${s.status}"\n`);
+        const students = db.prepare(`SELECT student_code, full_name, grade_level FROM students`).all();
+        let csvContent = "student_code,full_name,grade_level\n";
+        students.forEach(s => csvContent += `"${s.student_code}","${s.full_name}","${s.grade_level}"\n`);
 
         const { filePath } = await dialog.showSaveDialog({
             title: 'Export Student Roster', defaultPath: 'student_roster.csv',
