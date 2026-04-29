@@ -6,8 +6,6 @@ const dbManager = require('./database.js'); // Dual-Connection Manager
 
 
 
-app.disableHardwareAcceleration();
-
 const log = require('electron-log');
 
 
@@ -708,7 +706,9 @@ ipcMain.handle('switch-report-db', async (event, fileName) => {
     
     BrowserWindow.getAllWindows().forEach(win => {
         win.webContents.send('database-switched', fileName);
+        
     });
+    writeAuditLog("Admin Year Selected", `Viewed the archived data: ${fileName}`);
     return { success: true };
 });
 
@@ -729,7 +729,9 @@ ipcMain.handle('get-archives', () => {
 
 ipcMain.handle('archive-school-year', async (event, schoolYearStr) => {
 
-    return await dbManager.archiveCurrentYear(schoolYearStr);
+   const result= await dbManager.archiveCurrentYear(schoolYearStr); 
+    writeAuditLog("Admin clicked panels", `Archiving school year: ${schoolYearStr}`);
+    return result;
 });
 
 
@@ -749,7 +751,7 @@ ipcMain.handle('generate-clean-pdf', async (event, fileName, htmlContent) => {
         workerWindow.close();
 
 
-        writeAuditLog("EXPORT_PDF", `Generated and saved a PDF report to: ${filePath}`);
+        
         return { success: true };
     } catch (error) { workerWindow.close(); // 1. We finally USE the tool right here! (This makes the warning disappear)
         const friendlyMessage = getFriendlyError(error);
