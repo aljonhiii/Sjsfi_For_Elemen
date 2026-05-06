@@ -60,6 +60,8 @@ liveDb.exec(`
     CREATE TABLE IF NOT EXISTS visitor_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         visitor_name TEXT, 
+        mobile TEXT,
+        email TEXT,
         badge_code TEXT,    
         log_type TEXT, 
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -74,6 +76,15 @@ liveDb.exec(`
         date_added DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 `);
+
+
+// Add this to your database initialization logic
+liveDb.exec(`   
+    CREATE TABLE IF NOT EXISTS grade_levels (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        level_name TEXT UNIQUE NOT NULL
+    )
+`)
 }
 
 // --- 2. INITIALIZE REPORT DB (VIEWER) ---

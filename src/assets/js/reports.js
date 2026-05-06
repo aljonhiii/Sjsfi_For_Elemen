@@ -129,280 +129,362 @@ async function loadLogs() {
 
 
 function filterLogsTable() {
+    // 1. Get the current values from the UI
     const searchText = (document.getElementById('searchLogs')?.value || '').toLowerCase();
     const deptFilter = document.getElementById('deptFilterLogs')?.value || 'ALL';
 
-    // Filter the master copy down into currentLogsData
+    // 2. Filter the master data list
     currentLogsData = allFetchedLogsData.filter(log => {
-        // 1. Check Search Box (by Name)
-        const studentName = (log.full_name || '').toLowerCase();
-        const matchesSearch = studentName.includes(searchText);
+        // Search filter (Matches by Name)
+        const matchesSearch = (log.full_name || '').toLowerCase().includes(searchText);
 
-        // 2. Check Department Dropdown
+        // Department/Visitor filter
         let matchesDept = false;
         if (deptFilter === 'ALL') {
             matchesDept = true;
         } else if (deptFilter === 'VISITOR') {
+            // Only show if the user_type is VISITOR
             matchesDept = (log.user_type === 'VISITOR');
         } else {
+            // Only show if it's a student AND matches the grade range/keywords
             matchesDept = (log.user_type !== 'VISITOR') && isGradeInDept(log.grade_level, deptFilter);
         }
 
         return matchesSearch && matchesDept;
     });
 
-    // Reset pagination and redraw the table
+    // 3. Update the table display
     currentPage = 1;
     renderLogsTable();
 }
 
 function renderLogsTable() {
-            const tbody = document.getElementById('logsTable');
-            if (!tbody) return;
-            
-            tbody.innerHTML = '';
-            if(currentLogsData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No logs for this range.</td></tr>';
-                return;
-            }
-            const start = (currentPage - 1) * rowsPerPage;
-            const end = start + rowsPerPage;
-            
-            currentLogsData.slice(start, end).forEach(log => {
-                const logTypeClass = log.log_type.includes('IN') ? 'log-in' : 'log-out';
-                const logTypeIcon = log.log_type.includes('IN') ? "<i class='bx bx-right-arrow-alt'></i>" : "<i class='bx bx-left-arrow-alt'></i>";
-                
-                const dateObj = new Date(log.timestamp);
-                const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const dateStr = dateObj.toLocaleDateString();
-                
-                // 🌟 CLEAN TEXT LABEL INSTEAD OF BULKY BADGE 🌟
-                const typeLabel = log.user_type === 'VISITOR' 
-                    ? `<span style="color: #f39c12; font-weight: 800; font-size: 12px; margin-left: 6px;"></span>`
-                    : `<span style="color: #1420c9; font-weight: 800; font-size: 12px; margin-left: 6px;"></span>`;
-                
-                tbody.innerHTML += `<tr>
-                    <td><strong style="color: var(--primary-dark); font-size: 15px;">${log.full_name}</strong> ${typeLabel}</td>
-                    <td><span style="font-weight: 600; color: var(--text-secondary);">${log.grade_level !== 'Guest' ? 'Grade ' : ''}${log.grade_level}</span></td>
-                    <td><span class="${logTypeClass}" style="font-weight: 800;">${logTypeIcon} ${log.log_type}</span></td>
-                    <td style="font-weight:600; font-family: monospace;">${dateStr} ${timeStr}</td>
-                </tr>`;
-            });
-            
-            const totalPages = Math.ceil(currentLogsData.length / rowsPerPage);
-            const pageInfo = document.getElementById('pageInfo');
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            if (pageInfo) pageInfo.innerText = `Page ${currentPage} of ${totalPages || 1}`;
-            if (prevBtn) prevBtn.disabled = currentPage === 1;
-            if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+    const tbody = document.getElementById('logsTable');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    if(currentLogsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No logs for this range.</td></tr>';
+        return;
+    }
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    
+    currentLogsData.slice(start, end).forEach(log => {
+        const logTypeClass = log.log_type.includes('IN') ? 'log-in' : 'log-out';
+        const logTypeIcon = log.log_type.includes('IN') ? "<i class='bx bx-right-arrow-alt'></i>" : "<i class='bx bx-left-arrow-alt'></i>";
+        
+        const dateObj = new Date(log.timestamp);
+        const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = dateObj.toLocaleDateString();
+        
+        const isVisitor = log.user_type === 'VISITOR';
+        
+        const typeLabel = isVisitor 
+            ? `<span style="color: #f39c12; font-weight: 800; font-size: 11px; margin-left: 6px;">(Visitor)</span>`
+            : ``; // Hide label for students to keep it clean
+        
+        const displayGrade = isVisitor ? 'Visitor' : log.grade_level;
+
+        // 🌟 RENDER CONTACT INFO FOR UI
+        let contactInfo = '';
+        if (isVisitor && (log.mobile || log.email)) {
+            const phone = log.mobile ? `<span style="margin-right: 12px;"><i class='bx bx-phone' style="font-size: 12px;"></i> ${log.mobile}</span>` : '';
+            const email = log.email ? `<span><i class='bx bx-envelope' style="font-size: 12px;"></i> ${log.email}</span>` : '';
+            contactInfo = `<div style="font-size: 11px; color: #64748b; margin-top: 4px; font-weight: normal; display: flex; align-items: center; gap: 4px;">${phone}${email}</div>`;
         }
 
+        tbody.innerHTML += `<tr>
+            <td style="padding: 12px 15px;">
+                <div style="display: flex; align-items: center;">
+                    <strong style="color: var(--primary-dark); font-size: 15px;">${log.full_name}</strong> 
+                    ${typeLabel}
+                </div>
+                ${contactInfo} 
+            </td>
+            <td><span style="font-weight: 600; color: var(--text-secondary);">${displayGrade}</span></td>
+            <td><span class="${logTypeClass}" style="font-weight: 800;">${logTypeIcon} ${log.log_type}</span></td>
+            <td style="font-weight:600; font-family: monospace;">${dateStr} ${timeStr}</td>
+        </tr>`;
+    });
+    
+    // ... rest of your pagination code
+    const totalPages = Math.ceil(currentLogsData.length / rowsPerPage);
+    const pageInfo = document.getElementById('pageInfo');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    if (pageInfo) pageInfo.innerText = `Page ${currentPage} of ${totalPages || 1}`;
+    if (prevBtn) prevBtn.disabled = currentPage === 1;
+    if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+}
         function changePage(dir) { currentPage += dir; renderLogsTable(); }
 
-        function isGradeInDept(gradeValue, dept) {
-            if (dept === 'ALL' || !dept) return true;
-            
-            // This cleans the data: "Grade 7" or "7th" both become the number 7
-            const num = parseInt(String(gradeValue).replace(/\D/g, ''), 10);
-            if (isNaN(num)) return false; 
+// ✅ DYNAMIC KEYWORD VERSION
+function isGradeInDept(gradeValue, dept) {
+    if (dept === 'ALL' || !dept) return true;
+    
+    const gradeStr = String(gradeValue || "").toUpperCase();
+    const num = parseInt(gradeStr.replace(/\D/g, ''), 10); // Extracts the number
 
-            if (dept === 'Elementary') return num >= 1 && num <= 6;
-            if (dept === 'Junior High') return num >= 7 && num <= 10;
-            if (dept === 'Senior High') return num >= 11 && num <= 12;
-            return false;
-        } 
+    if (dept === 'Elementary') {
+        return num >= 1 && num <= 6;
+    }
+    if (dept === 'Junior High') {
+        return num >= 7 && num <= 10;
+    }
+    if (dept === 'Senior High') {
+        // Matches 11, 12, or common Senior High strands
+        return (num === 11 || num === 12) || 
+               ['STEM', 'ABM', 'HUMSS', 'GAS', 'TVL'].some(strand => gradeStr.includes(strand));
+    }
+    return false;
+}
 
         // --- PDF LOGS ---
 async function exportLogsPDF() {
-            const start = document.getElementById('logStart').value;
-            const end = document.getElementById('logEnd').value;
-            
-            // 1. Get the selected Department from the dropdown
-            const deptFilter = document.getElementById('deptFilterLogs');
-            const selectedDept = deptFilter ? deptFilter.value : 'ALL';
+const start = document.getElementById('logStart').value;
+    const end = document.getElementById('logEnd').value;
 
-            if (currentLogsData.length === 0) {
-                alert("Please load the data before exporting!"); 
-                return;
+
+
+    const deptFilter = document.getElementById('deptFilterLogs');
+    const selectedDept = deptFilter ? deptFilter.value : 'ALL';
+
+    if (currentLogsData.length === 0) {
+        alert("Please load the data before exporting!"); 
+        return;
+    }
+
+    showLoading('Exporting Pdf for Logs...');
+    
+    try {
+        let fullTableRows = "";
+        let rowCount = 0;
+
+        const activeSessions = {};
+        const pairedSessions = [];
+
+        const sortedLogs = [...allFetchedLogsData].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        sortedLogs.filter(log => {
+            const currentFilter = selectedDept;
+            const isVisitor = String(log.user_type).toUpperCase() === 'VISITOR';
+            if (currentFilter === 'ALL') return true;
+            if (currentFilter === 'VISITOR') return isVisitor;
+            return !isVisitor && isGradeInDept(log.grade_level, currentFilter);
+        }).forEach(log => {
+            const isVisitor = String(log.user_type).toUpperCase() === 'VISITOR';
+            const studentKey = isVisitor ? log.full_name : (log.student_code || log.full_name);
+            const dateObj = new Date(log.timestamp);
+            const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateStr = dateObj.toLocaleDateString();
+            const pdfGrade = isVisitor ? 'Visitor' : log.grade_level;
+
+            // 🌟 FORMAT CONTACT INFO FOR PDF
+            let contactHTML = '';
+            if (isVisitor && (log.mobile || log.email)) {
+                const phoneStr = log.mobile ? `<b>Mob:</b> ${log.mobile} &nbsp;&nbsp;` : '';
+                const emailStr = log.email ? `<b>Email:</b> ${log.email}` : '';
+                contactHTML = `<div style="font-size: 10px; color: #475569; margin-top: 4px; font-weight: normal;">${phoneStr}${emailStr}</div>`;
             }
 
-            showLoading('Exporting Pdf for Logs...');
-            
-            try {
-                let fullTableRows = "";
-                let rowCount = 0;
-
-
-//              FIX: Ignore the search bar, filter only by department!
-                allFetchedLogsData.filter(log => {
-                    const deptFilter = document.getElementById('deptFilterLogs')?.value || 'ALL';
-                    if (deptFilter === 'ALL') return true;
-                    if (deptFilter === 'VISITOR') return log.user_type === 'VISITOR';
-                    return log.user_type !== 'VISITOR' && isGradeInDept(log.grade_level, deptFilter);
-                }).forEach(log => {
-                    const dateObj = new Date(log.timestamp);
-                    const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const dateStr = dateObj.toLocaleDateString();
-                    const typeColor = log.log_type.includes('IN') ? '#27ae60' : '#d63031';
-                    
-                    const roleLabel = log.user_type === 'VISITOR' 
-                        ? `<span style="color: #f39c12; font-size: 11px; font-weight: bold; margin-left: 4px;"></span>` 
-                        : `<span style="color: #1420c9; font-size: 11px; font-weight: bold; margin-left: 4px;"></span>`;
-                    
-                    fullTableRows += `<tr>
-                        <td><b>${log.full_name}</b> ${roleLabel}</td>
-                        <td>${log.grade_level !== 'Guest' ? 'Grade ' : ''}${log.grade_level}</td>
-                        <td style="color: ${typeColor}; font-weight: bold;">${log.log_type}</td>
-                        <td>${dateStr} ${timeStr}</td>
-                    </tr>`;
-                    rowCount++;
-                });
-                // 3. If no records match the filter, stop here
-                if (rowCount === 0) {
-                    alert(`No records found for ${selectedDept} in this date range.`);
-                    return;
+            if (log.log_type.includes('IN')) {
+                const newVisit = {
+                    name: log.full_name,
+                    grade: pdfGrade,
+                    contact: contactHTML, // 🌟 Save it in the session object
+                    timeIn: timeStr,
+                    timeOut: '<span style="color: #d63031;">Still inside or Did not Time out</span>',
+                    date: dateStr
+                };
+                pairedSessions.push(newVisit);
+                activeSessions[studentKey] = newVisit;
+            } 
+            else if (log.log_type.includes('OUT')) {
+                if (activeSessions[studentKey]) {
+                    activeSessions[studentKey].timeOut = timeStr;
+                    delete activeSessions[studentKey];
+                } else {
+                    pairedSessions.push({
+                        name: log.full_name,
+                        grade: pdfGrade,
+                        contact: contactHTML, // 🌟 Save it here too
+                        timeIn: '---',
+                        timeOut: timeStr,
+                        date: dateStr
+                    });
                 }
-
-                const imageTag = base64Logo ? `<img src="${base64Logo}" width="80" height="80" style="margin-bottom: 10px; object-fit: contain;">` : '';
-
-                const reportHTML = `
-                    <html>
-                    <head>
-                        <style>
-                            /* --- GLOBAL PRINT SETTINGS --- */
-                            body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #000; margin: 0; }
-                            
-                            /* --- SCHOOL LETTERHEAD DESIGN --- */
-                            .school-header {
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                gap: 15px;
-                                margin-bottom: 20px;
-                                padding-bottom: 15px;
-                            }
-                            .logo-container img {
-                                width: 85px;
-                                height: 85px;
-                                object-fit: contain;
-                            }
-                            .text-container {
-                                display: flex;
-                                flex-direction: column;
-                            }
-                            .chinese-text {
-                                font-size: 16px;
-                                font-weight: bold;
-                                margin-bottom: 2px;
-                                color: #000;
-                            }
-                            .school-name {
-                                font-size: 24px;
-                                font-family: 'Times New Roman', serif;
-                                font-weight: 800;
-                                margin: 0;
-                                color: #000;
-                                border-bottom: 2px solid #1e8449;
-                                padding-bottom: 4px;
-                                margin-bottom: 4px;
-                                letter-spacing: 0.5px;
-                            }
-                            .contact-info {
-                                font-size: 11px;
-                                font-family: Arial, sans-serif;
-                                line-height: 1.4;
-                                color: #000;
-                            }
-
-                            /* --- REPORT TITLE --- */
-                            .report-title { text-align: center; margin-bottom: 20px; }
-                            .report-title h2 { margin: 0; color: #1e8449; font-size: 18px; text-transform: uppercase; }
-                            .report-title p { margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #555; }
-
-                            /* --- TABLE STYLES --- */
-                            table { width: 100%; border-collapse: collapse; }
-                            th { background-color: #f3faef; border: 1px solid #d1e8d8; padding: 10px; text-align: left; font-size: 12px; color: #1e8449; }
-                            td { border: 1px solid #d1e8d8; padding: 8px 10px; font-size: 12px; }
-
-                            /* --- REPEATING PDF MAGIC --- */
-                            @media print {
-                                thead { display: table-header-group; }
-                                tfoot { display: table-footer-group; }
-                            }
-                            
-                            .sig-container {
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: flex-end;
-                                padding-top: 40px;
-                            }
-                            .sig-box { text-align: center; }
-                            .sig-line {
-                                border-bottom: 1px solid #000;
-                                width: 180px;
-                                height: 30px;
-                                margin-bottom: 5px;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="school-header">
-                            <div class="logo-container">
-                                ${imageTag}
-                            </div>
-                            <div class="text-container">
-                                <span class="chinese-text">三寶顏忠義中學</span>
-                                <h1 class="school-name">SAINT JOSEPH SCHOOL FOUNDATION, INC.</h1>
-                                <div class="contact-info">
-                                    Gov. Camins Avenue P.O Box 210 7000 Zamboanga City<br>
-                                    Tel. No. (062) 991-6675 / Fax No. (062) 993-2231
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="report-title">
-                            <h2>Attendance Logs Report</h2>
-                            <p>Dept: <b>${selectedDept}</b> | Period: <b>${start}</b> to <b>${end}</b></p>
-                        </div>
-
-                        <table>
-                            <thead>
-                                <tr><th>Name & Role</th><th>Grade Level</th><th>Log Type</th><th>Time / Date</th></tr>
-                            </thead>
-                            <tbody>
-                                ${fullTableRows}
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="4" style="border: none;">
-                                        <div class="sig-container">
-                                            <div class="sig-box">
-                                                <div class="sig-line"></div>
-                                                <b style="font-size: 12px;">Librarian Signature</b>
-                                            </div>
-                                            <div style="font-size: 11px; color: #555;">
-                                                Generated: ${new Date().toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </body>
-                    </html>
-                `;
-
-                // Include the department in the filename for better organization
-                const fileName = `Library_Logs_${selectedDept}_${start}_to_${end}.pdf`;
-                const result = await window.api.generatePDF(fileName, reportHTML); 
-                if (result.success) alert("Logs PDF Saved Successfully!");
-
-            } finally {
-                hideLoading();
             }
+        });
+
+        // 🌟 BUILD THE HTML ROWS
+        pairedSessions.forEach(s => {
+            fullTableRows += `<tr>
+                <td style="padding: 10px; border: 1px solid #d1e8d8;">
+                    <div style="font-weight: 800; color: #1e3a8a; font-size: 14px;">${s.name}</div>
+                    <div style="font-weight: 600; color: #64748b; font-size: 11px;">${s.grade}</div>
+                    ${s.contact || ''} </td>
+                <td style="text-align: center; color: #27ae60; font-weight: bold; border: 1px solid #d1e8d8;">${s.timeIn}</td>
+                <td style="text-align: center; font-weight: bold; border: 1px solid #d1e8d8;">${s.timeOut}</td>
+                <td style="text-align: center; font-family: monospace; border: 1px solid #d1e8d8;">${s.date}</td>
+            </tr>`;
+            rowCount++;
+        });
+
+        // If no records match the filter, stop here
+        if (rowCount === 0) {
+            alert(`No records found for ${selectedDept} in this date range.`);
+            return;
         }
+
+        const imageTag = base64Logo ? `<img src="${base64Logo}" width="80" height="80" style="margin-bottom: 10px; object-fit: contain;">` : '';
+        // 🌟 THE FIX: Decide the column title based on what department is selected
+        const infoHeader = selectedDept === 'VISITOR' 
+            ? 'Visitor Information' 
+            : (selectedDept === 'ALL' ? 'Student & Visitor Information' : 'Student Information');   
+            
+        const reportHTML = `
+            <html>
+            <head>
+                <style>
+                    /* --- GLOBAL PRINT SETTINGS --- */
+                    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #000; margin: 0; }
+                    
+                    /* --- SCHOOL LETTERHEAD DESIGN --- */
+                    .school-header {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 15px;
+                        margin-bottom: 20px;
+                        padding-bottom: 15px;
+                    }
+                    .logo-container img {
+                        width: 85px;
+                        height: 85px;
+                        object-fit: contain;
+                    }
+                    .text-container {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .chinese-text {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin-bottom: 2px;
+                        color: #000;
+                    }
+                    .school-name {
+                        font-size: 24px;
+                        font-family: 'Times New Roman', serif;
+                        font-weight: 800;
+                        margin: 0;
+                        color: #000;
+                        border-bottom: 2px solid #1e8449;
+                        padding-bottom: 4px;
+                        margin-bottom: 4px;
+                        letter-spacing: 0.5px;
+                    }
+                    .contact-info {
+                        font-size: 11px;
+                        font-family: Arial, sans-serif;
+                        line-height: 1.4;
+                        color: #000;
+                    }
+
+                    /* --- REPORT TITLE --- */
+                    .report-title { text-align: center; margin-bottom: 20px; }
+                    .report-title h2 { margin: 0; color: #1e8449; font-size: 18px; text-transform: uppercase; }
+                    .report-title p { margin: 5px 0 0 0; font-size: 12px; font-weight: bold; color: #555; }
+
+                    /* --- TABLE STYLES --- */
+                    table { width: 100%; border-collapse: collapse; }
+                    th { background-color: #f3faef; border: 1px solid #d1e8d8; padding: 10px; font-size: 12px; color: #1e8449; }
+                    td { border: 1px solid #d1e8d8; padding: 8px 10px; font-size: 12px; }
+
+                    /* --- REPEATING PDF MAGIC --- */
+                    @media print {
+                        thead { display: table-header-group; }
+                        tfoot { display: table-footer-group; }
+                    }
+                    
+                    .sig-container {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-end;
+                        padding-top: 40px;
+                    }
+                    .sig-box { text-align: center; }
+                    .sig-line {
+                        border-bottom: 1px solid #000;
+                        width: 180px;
+                        height: 30px;
+                        margin-bottom: 5px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="school-header">
+                    <div class="logo-container">
+                        ${imageTag}
+                    </div>
+                    <div class="text-container">
+                        <span class="chinese-text">三寶顏忠義中學</span>
+                        <h1 class="school-name">SAINT JOSEPH SCHOOL FOUNDATION, INC.</h1>
+                        <div class="contact-info">
+                            Gov. Camins Avenue P.O Box 210 7000 Zamboanga City<br>
+                            Tel. No. (062) 991-6675 / Fax No. (062) 993-2231
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-title">
+                    <h2>Attendance Logs Report</h2>
+                    <p>Dept: <b>${selectedDept}</b> | Period: <b>${start}</b> to <b>${end}</b></p>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; width: 40%;">${infoHeader}</th>
+                            <th style="text-align: center; width: 20%;">Time In</th>
+                            <th style="text-align: center; width: 20%;">Time Out</th>
+                            <th style="text-align: center; width: 20%;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${fullTableRows}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="border: none;">
+                                <div class="sig-container">
+                                    <div class="sig-box">
+                                        <div class="sig-line"></div>
+                                        <b style="font-size: 12px;">Librarian Signature</b>
+                                    </div>
+                                    <div style="font-size: 11px; color: #555;">
+                                        Generated: ${new Date().toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </body>
+            </html>
+        `;
+
+        // Include the department in the filename for better organization
+        const fileName = `Library_Logs_${selectedDept}_${start}_to_${end}.pdf`;
+        const result = await window.api.generatePDF(fileName, reportHTML); 
+        if (result.success) alert("Logs PDF Saved Successfully!");
+
+    } finally {
+        hideLoading();
+    }
+}
 
         // ==========================================
         // SECTION 2: SUMMARY LOGIC & EXPORTS
@@ -471,12 +553,21 @@ async function loadSummary() {
 
 function filterSummaryTable() {
     const searchText = (document.getElementById('searchSummary')?.value || '').toLowerCase();
+    
+    // 🌟 THE CONNECTION: Grab the value from your summary dropdown
     const deptFilter = document.getElementById('deptFilterSummary')?.value || 'ALL';
 
-    // Filter master list into current memory
+    // Filter the pre-calculated hours
     currentSummaryData = allFetchedSummaryData.filter(student => {
         const matchesSearch = student.name.toLowerCase().includes(searchText);
-        let matchesDept = (deptFilter === 'ALL') ? true : isGradeInDept(student.grade, deptFilter);
+
+        let matchesDept = false;
+        if (deptFilter === 'ALL') {
+            matchesDept = true;
+        } else {
+            // Re-use your numeric/keyword logic here!
+            matchesDept = isGradeInDept(student.grade, deptFilter);
+        }
         
         return matchesSearch && matchesDept;
     });
@@ -499,7 +590,7 @@ function renderSummaryTable() {
     currentSummaryData.forEach(s => {
         tbody.innerHTML += `<tr>
             <td><strong style="color: var(--primary-dark);">${s.name}</strong></td>
-            <td>Grade ${s.grade}</td>
+            <td>${s.grade}</td>
             <td><strong style="color: var(--primary-color);">${s.time}</strong></td>
         </tr>`;
     });
@@ -529,7 +620,7 @@ function renderSummaryTable() {
                 }).forEach(row => {
                     fullTableRows += `<tr>
                         <td><b>${row.name}</b></td>
-                        <td>Grade ${row.grade}</td>
+                        <td>${row.grade}</td>
                         <td style="color: #1e8449; font-weight: bold;">${row.time}</td>
                     </tr>`;
                     rowCount++;

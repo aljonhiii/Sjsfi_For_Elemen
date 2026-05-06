@@ -77,18 +77,40 @@
                     <span id="nameError" class="error-text"></span>
                 </div>
 
-                <div class="form-group">
-                    <label>Grade Level</label>
-                    <select id="grade" class="modern-select">
-                        <option value="" disabled selected>Select Grade</option>
-                        <option value="1">Grade 1</option>
-                        <option value="2">Grade 2</option>
-                        <option value="3">Grade 3</option>
-                        <option value="4">Grade 4</option>
-                        <option value="5">Grade 5</option>
-                        <option value="6">Grade 6</option>
-                    </select>
-                </div>
+<div class="form-group">
+    <label>Grade Level / Strand</label>
+    <div style="display: flex; gap: 10px;">
+        <select id="grade" class="modern-input" style="flex: 1;">
+            <option value="" disabled selected>Loading levels...</option>
+        </select>
+        <button type="button" onclick="openGradeModal()" class="btn-import" style="padding: 0 15px; background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-primary);">
+            <i class='bx bx-cog'></i>
+        </button>
+    </div>
+    <span id="gradeError" class="error-text"></span>
+</div>
+
+<!-- 2. The Grade Management Modal -->
+<div id="gradeModal" class="custom-modal-overlay">
+    <div class="custom-modal" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3><i class='bx bx-list-ul' style="color: var(--primary-color);"></i> Manage Grade Levels</h3>
+            <button type="button" onclick="closeGradeModal()" class="close-btn"><i class='bx bx-x'></i></button>
+        </div>
+        
+        <div class="modal-body">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="newGradeInput" class="modern-input" placeholder="Ex: Grade 12 - HUMSS" style="flex: 1;">
+                <button type="button" onclick="addNewGrade()" class="btn-confirm" style="padding: 0 20px;">Add</button>
+            </div>
+
+            <div class="badge-list-title">Existing Levels</div>
+            <div id="gradeListContainer" class="badge-list-container" style="max-height: 250px; overflow-y: auto;">
+                <!-- Levels will be injected here -->
+            </div>
+        </div>
+    </div>
+</div>
 
                 <div class="form-group">
                     <label>Profile Picture (Optional)</label>

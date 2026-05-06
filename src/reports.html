@@ -106,10 +106,12 @@
                 
                 <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
                     <select id="deptFilterLogs" class="dept-select" onchange="filterLogsTable()" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                        <option value="ALL">All Departments</option>
-                        <option value="Elementary">Elementary</option>
-                        <option value="VISITOR">Visitor</option>
-                    </select>
+                    <option value="ALL">All Departments</option>
+    <option value="Elementary">Elementary (1-6)</option>
+    <option value="Junior High">Junior High (7-10)</option>
+    <option value="Senior High">Senior High (11-12 & Strands)</option>
+    <option value="VISITOR">Visitor Only</option>
+                </select>
 
                     <button class="btn-pdf" onclick="exportLogsPDF()">
                         <i class='bx bxs-file-pdf'></i> Export PDF
@@ -156,9 +158,11 @@
                 
                 <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
                     <select id="deptFilterSummary" class="modern-select" onchange="filterSummaryTable()" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                        <option value="ALL">All Departments</option>
-                        <option value="Elementary">Elementary</option>
-                    </select>
+                <option value="ALL">All Departments</option>
+    <option value="Elementary">Elementary (1-6)</option>
+    <option value="Junior High">Junior High (7-10)</option>
+    <option value="Senior High">Senior High (11-12 & Strands)</option>
+                </select>
 
                     <button class="btn-pdf" onclick="exportSummaryPDF()">
                         <i class='bx bxs-file-pdf'></i> Export PDF

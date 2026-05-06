@@ -99,12 +99,27 @@ function hideLoading() {
             modal.classList.add('active');
         }
 
-        function closeModal() {
-            document.getElementById('customModal').classList.remove('active');
-            if (document.getElementById('modalIcon').classList.contains('success')) {
-                window.location.href = "manage.html"; 
-            }
+       function closeModal() {
+    const modal = document.getElementById('customModal');
+    const modalTitle = document.getElementById('modalTitle').innerText;
+    
+    // 1. Hide the modal first
+    modal.classList.remove('active');
+
+    // 2. Decide the next move based on the message type
+    if (document.getElementById('modalIcon').classList.contains('success')) {
+        
+        // Check if the success was for a full student enrollment
+        if (modalTitle.includes("Enrolled") || modalTitle.includes("Student Registered")) {
+            window.location.href = "manage.html"; 
+        } 
+        else {
+            // For Grade Levels or Strands, we just refresh the current page
+            // This instantly "unlocks" your inputs and clears the loading state
+            window.location.reload(); 
         }
+    }
+}   
 
         // === FORM SUBMISSION LOGIC (BASE64) ===
         document.getElementById('addForm').addEventListener('submit', async (e) => {
@@ -141,15 +156,15 @@ function hideLoading() {
                 hour: '2-digit', minute: '2-digit' 
             });
             try {
-                const data = {
-                    student_code: codeVal,
-                    full_name: nameVal,
-                    grade_level: gradeVal,
-                    status: true,
-                    profile_pic_data: null,
-                    profile_pic_ext: null,
-                    addedAt: currentTime
-                };
+const data = {
+    student_id: codeVal, // ✅ FIXED: Now it matches the backend perfectly!
+    full_name: nameVal,
+    grade_level: gradeVal,
+    status: true,
+    profile_pic_data: null,
+    profile_pic_ext: null,
+    addedAt: currentTime
+};
 
                 const fileInput = document.getElementById('pf');
                 
@@ -191,7 +206,7 @@ function hideLoading() {
                     const errorMsg = result.error ? result.error.toLowerCase() : '';
                     if (errorMsg.includes('unique') || errorMsg.includes('duplicate')) {
                         document.getElementById('code').focus();
-                        showModal('error', 'ID Already Taken', `The RFID Code "${data.student_code}" is already registered.`);
+                        showModal('error', 'ID Already Taken', `The RFID Code "${data.student_id}" is already registered.`);
                     } else {
                         showModal('error', 'Registration Failed', `Error: ${result.error}`);
                     }
@@ -343,3 +358,108 @@ async function saveNewBadge() {
             }
         }
     }
+
+
+
+
+// --- DYNAMIC GRADE LEVEL FUNCTIONS ---
+
+async function refreshGradeData() {
+    const res = await window.api.getGradeLevels();
+    if (!res.success) return;
+
+    // 1. Update the Select Dropdown in the main form
+    const dropdown = document.getElementById('grade');
+    dropdown.innerHTML = '<option value="" disabled selected>Select Level/Strand</option>';
+    res.data.forEach(level => {
+        dropdown.innerHTML += `<option value="${level.level_name}">${level.level_name}</option>`;
+    });
+
+    // 2. Update the List inside the Management Modal
+    const listContainer = document.getElementById('gradeListContainer');
+    if (listContainer) {
+        listContainer.innerHTML = res.data.map(level => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); padding: 10px 15px; margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <span style="font-weight: 600; font-size: 14px;">${level.level_name}</span>
+                <button onclick="removeGrade(${level.id})" style="background: transparent; color: #ef4444; border: none; cursor: pointer; font-size: 18px;">
+                    <i class='bx bx-trash'></i>
+                </button>
+            </div>
+        `).join('');
+    }
+}
+
+function openGradeModal() { document.getElementById('gradeModal').classList.add('active'); refreshGradeData(); }
+function closeGradeModal() { document.getElementById('gradeModal').classList.remove('active'); }
+
+async function addNewGrade() {
+    const input = document.getElementById('newGradeInput');
+    const submitBtn = event.target; // Grabs the button that was clicked
+    const name = input.value.trim();
+    
+    // 1. JAVASCRIPT VALIDATION
+    if (!name) {
+        showModal('error', 'Empty Input', 'Please enter a name for the Grade Level or Strand.');
+        input.focus();
+        return;
+    }
+
+    if (name.length < 2) {
+        showModal('error', 'Invalid Input', 'The name is too short. Please be more descriptive.');
+        return;
+    }
+
+    // Optional: Prevent special characters that might break file paths or CSVs
+    const regex = /^[a-zA-Z0-9\s\-\.]+$/;
+    if (!regex.test(name)) {
+        showModal('error', 'Invalid Characters', 'Please use only letters, numbers, hyphens, and spaces.');
+        return;
+    }
+
+    // 2. PREVENT INPUT LOCKING (Disable UI during process)
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i>`;
+    input.readOnly = true;
+
+    try {
+        const res = await window.api.addGradeLevel(name);
+        
+        if (res.success) {
+            // 3. PAGE REFRESH ON SUCCESS
+            // We show a quick success message first, then reload
+            input.value = ''; 
+            showModal('success', 'Level Added', `${name} is now available in the dropdown.`);
+            
+            // This small timeout ensures the user sees the success state before the refresh wipes the "locking"
+            setTimeout(() => {
+                window.location.reload();   
+            }, 1500);
+
+        } else {
+            // Handle duplicate errors from the database
+            showModal('error', 'Entry Blocked', res.error);
+            
+            // Re-enable input if it failed so they can fix it
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Add';
+            input.readOnly = false;
+        }
+    } catch (err) {
+        showModal('error', 'System Error', 'An unexpected error occurred. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Add';
+        input.readOnly = false;
+    }
+}
+
+async function removeGrade(id) {
+    if (confirm("Are you sure? This will remove the option from the dropdown.")) {
+        await window.api.deleteGradeLevel(id);
+        refreshGradeData();
+        window.location.reload();
+    }
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', refreshGradeData);
+

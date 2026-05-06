@@ -94,18 +94,6 @@ window.api.onDatabaseSwitched((fileName) => {
         applyFilters(); 
     }
 
-    function applyFilters() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const gradeTerm = document.getElementById('gradeFilter').value;
-        filteredStudents = allStudents.filter(s => {
-            const matchesSearch = s.full_name.toLowerCase().includes(searchTerm) || s.student_code.toLowerCase().includes(searchTerm);
-            const matchesGrade = gradeTerm === 'all' || s.grade_level == gradeTerm;
-            return matchesSearch && matchesGrade;
-        });
-        currentPage = 1; 
-        renderTable();
-    }
-
 function renderTable() {
         const tbody = document.getElementById('studentTable');
         tbody.innerHTML = '';
@@ -142,7 +130,7 @@ function renderTable() {
             tbody.innerHTML += `<tr>
                 <td><div class="student-info"><div class="avatar">${avatarHTML}</div><strong>${s.full_name}</strong></div></td>
                 <td style="font-family: monospace; font-weight: 600;">${s.student_code}</td>
-                <td>Grade ${s.grade_level}</td>
+                <td>${s.grade_level}</td>
 
                 <td>
                     <div style="display: flex; flex-direction: column;">
@@ -173,40 +161,66 @@ function renderTable() {
         document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
     }
 
-function editStudent(id) {
-        const student = allStudents.find(s => s.id === id);
-        if (!student) return;
-        
-        document.getElementById('editId').value = student.id;
-        
-        // 🌟 1. GRAB THE NAME BOX AND UNLOCK IT
-        const nameInput = document.getElementById('editName');
-        nameInput.value = student.full_name;
-        nameInput.removeAttribute('readonly');  // Strips away any ghost locks
-        nameInput.removeAttribute('disabled');  // Strips away any disabled states
-        
-        document.getElementById('editGrade').value = student.grade_level;
-        document.getElementById('editPhotoInput').value = '';
-        
-        const preview = document.getElementById('editImagePreview');
-        const placeholder = document.getElementById('editPlaceholder');
+async function editStudent(id) { // 🌟 Added 'async'
+    const student = allStudents.find(s => s.id === id);
+    if (!student) return;
 
-        if (student.profile_pic) {
-            preview.src = encodeURI("file:///" + student.profile_pic.replace(/\\/g, '/'));
-            preview.style.display = 'block';
-            placeholder.style.display = 'none';
-        } else {
-            preview.style.display = 'none';
-            placeholder.style.display = 'flex';
-        }
-        
-        document.getElementById('editModal').style.display = 'flex';
+    document.getElementById('editId').value = student.id;
+    document.getElementById('editRfid').value = student.student_code;
 
-        // 🌟 2. THE FOCUS FAILSAFE (Waits 50ms for the modal to appear, then forces the cursor inside)
-        setTimeout(() => {
-            nameInput.focus();
-        }, 50);
+    // --- 🚀 START DYNAMIC PART ---
+    const res = await window.api.getGradeLevels();
+    const editDropdown = document.getElementById('editGrade');
+    
+    if (res.success && editDropdown) {
+        // Clear old options (like the hardcoded ones)
+        editDropdown.innerHTML = ''; 
+        
+        // Add a placeholder
+        const placeholder = document.createElement('option');
+        placeholder.value = "";
+        placeholder.disabled = true;
+        placeholder.innerText = "Select Level";
+        editDropdown.appendChild(placeholder);
+
+        // Fill with your dynamic strands from the DB
+        res.data.forEach(level => {
+            const opt = document.createElement('option');
+            opt.value = level.level_name;
+            opt.textContent = level.level_name;
+            editDropdown.appendChild(opt);
+        });
     }
+    // --- 🏁 END DYNAMIC PART ---
+
+    const nameInput = document.getElementById('editName');
+    nameInput.value = student.full_name;
+    nameInput.removeAttribute('readonly');  
+    nameInput.removeAttribute('disabled');  
+    
+    // 🌟 Set the selected value AFTER the options have been created above
+    editDropdown.value = student.grade_level;
+
+    document.getElementById('editPhotoInput').value = '';
+    
+    const preview = document.getElementById('editImagePreview');
+    const placeholderIcon = document.getElementById('editPlaceholder');
+
+    if (student.profile_pic) {
+        preview.src = encodeURI("file:///" + student.profile_pic.replace(/\\/g, '/'));
+        preview.style.display = 'block';
+        placeholderIcon.style.display = 'none';
+    } else {
+        preview.style.display = 'none';
+        placeholderIcon.style.display = 'flex';
+    }
+    
+    document.getElementById('editModal').style.display = 'flex';
+
+    setTimeout(() => {
+        nameInput.focus();
+    }, 50);
+}
 
     // Your photo listener stays exactly the same!
     document.getElementById('editPhotoInput').addEventListener('change', function() {
@@ -221,14 +235,21 @@ function editStudent(id) {
 
 async function saveEdit() {
         const photoInput = document.getElementById('editPhotoInput');
-        const data = {
-            id: document.getElementById('editId').value,
-            full_name: document.getElementById('editName').value,
-            grade_level: document.getElementById('editGrade').value,
-            status: 1,
-            profile_pic_data: null, 
-            profile_pic_ext: null
-        };
+const data = {
+        id: parseInt(document.getElementById('editId').value), // 🌟 FIXED: Wrapped in parseInt()
+        student_id: document.getElementById('editRfid').value.trim(), 
+        full_name: document.getElementById('editName').value.trim(),
+        grade_level: document.getElementById('editGrade').value,
+        status: 1,
+        profile_pic_data: null, 
+        profile_pic_ext: null
+    };
+
+    // Basic validation to make sure they didn't leave it blank
+    if (!data.student_id || !data.full_name) {
+        alert("Please fill in both the ID/Code and the Full Name.");
+        return;
+    }
 
         showLoading('Processing....');
         
@@ -338,6 +359,61 @@ async function handleRestore(id, name) {
         }
     }
 
-    function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
-    function changePage(dir) { currentPage += dir; renderTable(); }
+    function closeEditModal() { document.getElementById('editModal').style.display = 'none'; 
+
+    }
+    function changePage(dir) { currentPage += dir; renderTable();
+
+     }
+
+function applyFilters() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const gradeFilter = document.getElementById('gradeFilter').value;
+
+    filteredStudents = allStudents.filter(student => {
+        // Matches Name or Code
+        const matchesSearch = 
+            (student.full_name || "").toLowerCase().includes(searchInput) || 
+            (student.student_code || "").toLowerCase().includes(searchInput);
+
+        // Matches Grade (Exact match because the dropdown was built from the data)
+        const matchesGrade = (gradeFilter === 'all' || student.grade_level === gradeFilter);
+
+        return matchesSearch && matchesGrade;
+    });
+
+    currentPage = 1;
+    renderTable();
+}
+
+
+// Function to fetch and show ONLY the grades the admin added
+async function loadDynamicGrades() {
+    const dropdown = document.getElementById('gradeFilter');
+    if (!dropdown) return;
+
+    try {
+        const response = await window.api.getGradeLevels(); // Call the new backend handler
+        
+        if (response.success) {
+            // Keep "All Levels", then clear the rest
+            dropdown.innerHTML = '<option value="all">All Levels</option>';
+
+            response.data.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.level_name; // This matches what's in the students table
+                opt.innerText = item.level_name;
+                dropdown.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.error("Failed to load grade categories:", err);
+    }
+}
+
+// Ensure this runs when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    loadDynamicGrades();
+    // ... your other init functions like loadRoster()
+});
     document.addEventListener('DOMContentLoaded', loadStudents);

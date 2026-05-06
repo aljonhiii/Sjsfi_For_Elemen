@@ -389,18 +389,47 @@ ipcMain.handle('process-visitors', async (event, badgeCode, visitorsArray) => {
     try {
         const db = dbManager.getLiveDb(); 
         
-        // 🌟 NEW: We insert both the badge_code AND the visitor_name
+        // 🌟 DATABASE FAILSAFE: Automatically add the columns if they are missing
+        try { db.exec("ALTER TABLE visitor_logs ADD COLUMN mobile TEXT;"); } catch (e) {}
+        try { db.exec("ALTER TABLE visitor_logs ADD COLUMN email TEXT;"); } catch (e) {}
+        
+        // If your Reports page pulls from a master 'logs' table, add them there too:
+        try { db.exec("ALTER TABLE logs ADD COLUMN mobile TEXT;"); } catch (e) {}
+        try { db.exec("ALTER TABLE logs ADD COLUMN email TEXT;"); } catch (e) {}
+
+        // 🌟 UPDATED: Insert badge, name, mobile, and email
         const insertVisitor = db.prepare(`
-            INSERT INTO visitor_logs (badge_code, visitor_name, log_type) 
-            VALUES (?, ?, 'TIME IN')
+            INSERT INTO visitor_logs (badge_code, visitor_name, mobile, email, log_type) 
+            VALUES (?, ?, ?, ?, 'TIME IN')
         `);
 
-        // Transaction loops through the array and assigns the badge to everyone
+        // (Optional but Recommended) If reports.js reads from a master "logs" table, prepare it:
+        let insertMasterLog;
+        try {
+            insertMasterLog = db.prepare(`
+                INSERT INTO logs (student_code, full_name, grade_level, user_type, mobile, email, log_type)
+                VALUES (?, ?, 'Guest', 'VISITOR', ?, ?, 'TIME IN')
+            `);
+        } catch(e) {
+            // Ignore if you don't use a master logs table
+        }
+
+        // Transaction loops through the array and assigns the badge & info to everyone
         const insertMany = db.transaction((visitors) => {
             for (const visitor of visitors) {
                 // Failsafe to make sure it's reading the names correctly
                 if (visitor && visitor.name && visitor.name.trim() !== "") {
-                    insertVisitor.run(badgeCode, visitor.name.trim()); 
+                    const vName = visitor.name.trim();
+                    const vMobile = visitor.mobile ? visitor.mobile.trim() : '';
+                    const vEmail = visitor.email ? visitor.email.trim() : '';
+
+                    // 1. Save to visitor_logs
+                    insertVisitor.run(badgeCode, vName, vMobile, vEmail); 
+
+                    // 2. Save to master logs (if it exists) so reports.js can print it
+                    if (insertMasterLog) {
+                        insertMasterLog.run(badgeCode, vName, vMobile, vEmail);
+                    }
                 }
             }
         });
@@ -437,32 +466,39 @@ ipcMain.handle('add-student', async (event, studentData) => {
         success: false, error: "You cannot add students while viewing past archive (data)"
     };
     if (dbManager.getIsArchiving()) return { success: false, error: "System is archiving." };
+    
     try {
         const db = dbManager.getLiveDb(); 
-        const { student_code, full_name, grade_level, status, profile_pic_data, profile_pic_ext, addedAt } = studentData;
+        
+        // We pull out student_id exactly as the frontend sends it
+        const { student_id, full_name, grade_level, status, profile_pic_data, profile_pic_ext, addedAt } = studentData;
         let savedPicPath = null;
         
         if (profile_pic_data && profile_pic_ext) {
             const imgDir = path.join(app.getPath('userData'), 'images');
             if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
-            savedPicPath = path.join(imgDir, `${student_code}.${profile_pic_ext}`);
+            
+            // 🌟 FIX 1: Changed to student_id to name the image file
+            savedPicPath = path.join(imgDir, `${student_id}.${profile_pic_ext}`);
             fs.writeFileSync(savedPicPath, profile_pic_data.split(';base64,').pop(), { encoding: 'base64' });
         }
 
         const stmt = db.prepare(`INSERT INTO students (student_code, full_name, grade_level, profile_pic, status, addedAt) VALUES (?, ?, ?, ?, ?, ?)`);
-        const info = stmt.run(student_code, full_name, grade_level, savedPicPath, status ? 1 : 0, addedAt);
         
-  
-        writeAuditLog("ADD_STUDENT", `Registered new student: ${full_name} (${student_code})`);
+        // 🌟 FIX 2: Changed to student_id to pass the value into the SQL query
+        const info = stmt.run(student_id, full_name, grade_level, savedPicPath, status ? 1 : 0, addedAt);
+        
+        // 🌟 FIX 3: Changed to student_id for the audit log
+        writeAuditLog("ADD_STUDENT", `Registered new student: ${full_name} (${student_id})`);
         
         return { success: true, id: info.lastInsertRowid };
-    } catch (error) { // 1. We finally USE the tool right here! (This makes the warning disappear)
+        
+    } catch (error) { 
         const friendlyMessage = getFriendlyError(error);
-
-        // 2. We log the beautifully translated message to the text file
         log.error(`User Alert: ${friendlyMessage} | Tech Details: ${error.message}`);
         
-        return { success: false, error: friendlyMessage }; }
+        return { success: false, error: friendlyMessage }; 
+    }
 });
 
 ipcMain.handle('edit-student', async (event, studentData) => {
@@ -470,33 +506,39 @@ ipcMain.handle('edit-student', async (event, studentData) => {
         success: false, error: "You cannot edit student while viewing the past archive (Data)"
     };
     if (dbManager.getIsArchiving()) return { success: false, error: 'System is archiving.' };
-    try {
+try {
         const db = dbManager.getLiveDb();
-        const { id, full_name, grade_level, status, profile_pic_data, profile_pic_ext } = studentData;
+        
+        const { id, student_id, full_name, grade_level, status, profile_pic_data, profile_pic_ext } = studentData;
         let savedPicPath = null;
 
+
         if (profile_pic_data && profile_pic_ext) {
-            const student = db.prepare(`SELECT student_code FROM students WHERE id = ?`).get(id);
-            if (student) {
-                const imgDir = path.join(app.getPath('userData'), 'images');
-                if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
-                savedPicPath = path.join(imgDir, `${student.student_code}.${profile_pic_ext}`);
-                fs.writeFileSync(savedPicPath, profile_pic_data.split(';base64,').pop(), { encoding: 'base64' });
-            }
+            const imgDir = path.join(app.getPath('userData'), 'images');
+            if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+            savedPicPath = path.join(imgDir, `${student_id}.${profile_pic_ext}`);
+            fs.writeFileSync(savedPicPath, profile_pic_data.split(';base64,').pop(), { encoding: 'base64' });
         }
+
+        let dbResult; // This will hold the database's true response
 
         if (savedPicPath) {
-            db.prepare(`UPDATE students SET full_name = ?, grade_level = ?, status = ?, profile_pic = ? WHERE id = ?`)
-              .run(full_name, grade_level, status ? 1 : 0, savedPicPath, id);
+            dbResult = db.prepare(`UPDATE students SET student_code = ?, full_name = ?, grade_level = ?, status = ?, profile_pic = ? WHERE id = ?`)
+              .run(student_id, full_name, grade_level, status ? 1 : 0, savedPicPath, id);
         } else {
-            db.prepare(`UPDATE students SET full_name = ?, grade_level = ?, status = ? WHERE id = ?`)
-              .run(full_name, grade_level, status ? 1 : 0, id);
+            dbResult = db.prepare(`UPDATE students SET student_code = ?, full_name = ?, grade_level = ?, status = ? WHERE id = ?`)
+              .run(student_id, full_name, grade_level, status ? 1 : 0, id);
         }
 
+        // If it changed 0 rows, we FORCE it to show an error on your screen
+        if (dbResult.changes === 0) {
+            return { success: false, error: `CRITICAL: Database could not find a student with internal ID: ${id}` };
+        }
 
-        writeAuditLog("EDIT_STUDENT", `Updated profile for student ID: ${full_name}`);
+        writeAuditLog("EDIT_STUDENT", `Updated profile & RFID for student: ${full_name}`);
         return { success: true };
-    } catch (error) { // 1. We finally USE the tool right here! (This makes the warning disappear)
+        
+    } catch (error) {
         const friendlyMessage = getFriendlyError(error);
 
         // 2. We log the beautifully translated message to the text file
@@ -596,6 +638,42 @@ ipcMain.handle('get-deleted-students', async () => {
 });
 
 
+
+// 1. Fetch all levels for the dropdowns
+ipcMain.handle('get-grade-levels', async () => {
+    try {
+        const db = dbManager.getLiveDb();
+        const levels = db.prepare(`SELECT * FROM grade_levels ORDER BY level_name ASC`).all();
+        return { success: true, data: levels };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+// 2. Add a new strand/level
+ipcMain.handle('add-grade-level', async (event, name) => {
+    try {
+        const db = dbManager.getLiveDb();
+        db.prepare(`INSERT INTO grade_levels (level_name) VALUES (?)`).run(name);
+        return { success: true };
+    } catch (error) {
+        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return { success: false, error: "This level already exists!" };
+        return { success: false, error: error.message };
+    }
+});
+
+// 3. Delete a level
+ipcMain.handle('delete-grade-level', async (event, id) => {
+    try {
+        const db = dbManager.getLiveDb();
+        db.prepare(`DELETE FROM grade_levels WHERE id = ?`).run(id);
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+
 // 5. REPORTS & SESSION SWITCHING
 ipcMain.handle('get-logs', async (event, date) => {
     try {
@@ -671,7 +749,9 @@ const query = `
                 students.grade_level AS grade_level, 
                 'STUDENT' AS user_type,
                 student_logs.log_type, 
-                datetime(student_logs.timestamp, 'localtime') as timestamp 
+                datetime(student_logs.timestamp, 'localtime') as timestamp,
+                NULL AS mobile,
+                NULL AS email
             FROM student_logs 
             JOIN students ON student_logs.student_id = students.id 
             WHERE DATE(student_logs.timestamp, 'localtime') BETWEEN ? AND ? 
@@ -684,7 +764,9 @@ const query = `
                 'Guest' AS grade_level, 
                 'VISITOR' AS user_type,
                 visitor_logs.log_type, 
-                datetime(visitor_logs.timestamp, 'localtime') as timestamp 
+                datetime(visitor_logs.timestamp, 'localtime') as timestamp,
+                visitor_logs.mobile,
+                visitor_logs.email 
             FROM visitor_logs 
             WHERE DATE(visitor_logs.timestamp, 'localtime') BETWEEN ? AND ? 
 

@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld('api', {
     addMasterBadge: (code, desc) => ipcRenderer.invoke('add-master-badge', code, desc),
     getMasterBadges: () => ipcRenderer.invoke('get-master-badges'),
     deleteMasterBadge: (code) => ipcRenderer.invoke('delete-master-badge', code),
-    openAuditFile: () => ipcRenderer.invoke('open-audit-file')
+    openAuditFile: () => ipcRenderer.invoke('open-audit-file'),
+    addGradeLevel: (name) => ipcRenderer.invoke('add-grade-level', name),
+    getGradeLevels: () => ipcRenderer.invoke('get-grade-levels'),
+deleteGradeLevel: (id) => ipcRenderer.invoke('delete-grade-level', id),
 
 });
