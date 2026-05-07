@@ -29,5 +29,14 @@ contextBridge.exposeInMainWorld('api', {
     addGradeLevel: (name) => ipcRenderer.invoke('add-grade-level', name),
     getGradeLevels: () => ipcRenderer.invoke('get-grade-levels'),
 deleteGradeLevel: (id) => ipcRenderer.invoke('delete-grade-level', id),
+getDepartments: () => ipcRenderer.invoke('get-departments'),
+    addDepartment: (name) => ipcRenderer.invoke('add-department', name),
+    deleteDepartment: (id) => ipcRenderer.invoke('delete-department', id),
+    addFaculty: (data) => ipcRenderer.invoke('add-faculty', data),
+    getFaculty: (isArchive) => ipcRenderer.invoke('get-faculty', isArchive),
+    editFaculty: (data) => ipcRenderer.invoke('edit-faculty', data),
+    deleteFaculty: (id) => ipcRenderer.invoke('delete-faculty', id),
+    restoreFaculty: (id) => ipcRenderer.invoke('restore-faculty', id),
+    importFacultyCSV: () => ipcRenderer.invoke('import-faculty-csv'),
 
 });

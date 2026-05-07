@@ -270,36 +270,48 @@ let newProfileHTML = '';
                                 statusMessage.innerHTML = '';
                             }, 3500);
                             
-                        } else {
-                            
-                            // 🎓 1. STANDARD STUDENT TEMPLATE HTML
-                            newProfileHTML = `
-                                <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-                                    <img class="modern-card-img" src="${picSrc}" onerror="this.src='https://via.placeholder.com/320x400/1e293b/ffffff?text=No+Photo'">
-                                    <div class="modern-card-overlay">
-                                        <div class="modern-card-header">
-                                            <h2 class="modern-card-title">${result.studentName}</h2>
-                                        </div>
-                                        <p class="modern-card-desc">
-                                            Grade Level: <strong>${result.grade}</strong>
-                                        </p>
-                                        <div class="modern-card-tags">
-                                            <div class="modern-tag ${badgeClass}">
-                                                <i class='bx bx-scan'></i> ${result.logType}
-                                            </div>
-                                            <div class="modern-tag"><i class='bx bx-time'></i> ${timeString}</div>
-                                            <div class="modern-tag"><i class='bx bx-calendar'></i> ${dateString}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
+} else {
+    // ==========================================================
+    // 🌟 SMART UI: FACULTY VS STUDENT DETECTION
+    // ==========================================================
+    
+    // 1. Check if the backend identified this as a Faculty member
+    const isFaculty = result.userType === 'FACULTY';
+    
+    // 2. Switch labels: "Department" for Teachers, "Grade Level" for Students
+    const typeLabel = isFaculty ? 'Department' : 'Grade Level';
+    
+    // 3. Create a "STAFF" badge for teachers
+    const staffBadge = isFaculty 
+        ? `<span style="background: #4f46e5; color: white; padding: 2px 10px; border-radius: 6px; font-size: 11px; vertical-align: middle; margin-left: 10px; font-weight: 800; letter-spacing: 0.5px;">STAFF / FACULTY</span>` 
+        : '';
 
-                            // 🎓 2. SHOW THE STUDENT ON SCREEN
-                            scanResultContent.innerHTML = newProfileHTML;
-                            
-                            // 🎓 3. REMEMBER THE STUDENT (They stay until next scan)
-                            lastSuccessfulProfile = newProfileHTML;
-                        }
+    // 4. Generate the Modern Card HTML
+    newProfileHTML = `
+        <div class="modern-card" style="animation: fadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <img class="modern-card-img" src="${picSrc}" onerror="this.src='https://via.placeholder.com/320x400/1e293b/ffffff?text=No+Photo'">
+            <div class="modern-card-overlay">
+                <div class="modern-card-header">
+                    <h2 class="modern-card-title">${result.studentName} ${staffBadge}</h2>
+                </div>
+                <p class="modern-card-desc">
+                    ${typeLabel}: <strong>${result.grade}</strong>
+                </p>
+                <div class="modern-card-tags">
+                    <div class="modern-tag ${badgeClass}">
+                        <i class='bx bx-scan'></i> ${result.logType}
+                    </div>
+                    <div class="modern-tag"><i class='bx bx-time'></i> ${timeString}</div>
+                    <div class="modern-tag"><i class='bx bx-calendar'></i> ${dateString}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 5. Update the screen and the "Memory"
+    scanResultContent.innerHTML = newProfileHTML;
+    lastSuccessfulProfile = newProfileHTML;
+}
                     } else {
                         // ==============================================================
                         //  THE NEW MASTER VISITOR TELEPORT CATCHER

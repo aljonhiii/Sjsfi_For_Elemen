@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Student Roster | SJSFI Library</title>
+    <title>Faculty Roster | SJSFI Library</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/manage.css">
 </head>
@@ -28,11 +28,11 @@
         
         <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Students</div>
         <a href="add-students.html" class="menu-item"><i class='bx bxs-user-plus'></i> Register Student</a>
-        <a href="manage.html" class="menu-item active"><i class='bx bx-user-pin'></i> Student Roster</a>
+        <a href="manage.html" class="menu-item"><i class='bx bx-user-pin'></i> Student Roster</a>
         
         <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Faculty</div>
         <a href="add-faculty.html" class="menu-item"><i class='bx bxs-briefcase-alt-2'></i> Register Faculty</a>
-        <a href="manage-faculty.html" class="menu-item"><i class='bx bx-briefcase'></i> Faculty Roster</a>
+        <a href="manage-faculty.html" class="menu-item active"><i class='bx bx-briefcase'></i> Faculty Roster</a>
 
         <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">System</div>
         <a href="reports.html" class="menu-item"><i class='bx bx-bar-chart-alt-2'></i> Reports & Analytics</a>
@@ -41,27 +41,20 @@
 
     <main class="main-content">
         <div class="header">
-            <h1>Student Roster</h1>
+            <h1>Faculty & Staff Roster</h1>
         </div>
 
         <div class="card">
-            
             <div class="controls-bar">
                 <div class="search-wrapper">
                     <i class='bx bx-search'></i>
-                    <input type="text" id="searchInput" class="modern-input" placeholder="Search by name or ID..." oninput="applyFilters()">
+                    <input type="text" id="searchInput" class="modern-input" placeholder="Search by name or RFID..." oninput="applyFilters()">
                 </div>
                 
                 <div class="filter-wrapper">
-<select id="gradeFilter" class="modern-select" onchange="applyFilters()">
-    <option value="all">All Levels</option>
-    </select>
-                </div>
-                
-                <div style="margin-left: auto;">
-                    <button onclick="handleExportCSV()" class="btn-export">
-                        <i class='bx bx-export'></i> Export CSV
-                    </button>
+                    <select id="deptFilter" class="modern-select" onchange="applyFilters()">
+                        <option value="all">All Departments</option>
+                        </select>
                 </div>
             </div>
 
@@ -70,14 +63,14 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Student Name</th>
-                                <th>ID / Code</th>
-                                <th>Grade Level</th>
+                                <th>Faculty Name</th>
+                                <th>RFID Code</th>
+                                <th>Department</th>
                                 <th>Date Registered</th>
                                 <th style="text-align: right;">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="studentTable"></tbody>
+                        <tbody id="facultyTable"></tbody>
                     </table>
                 </div>
 
@@ -92,12 +85,8 @@
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div class="page-info" id="pageInfo">Showing 0 records</div>
                         <div style="display:flex; gap: 8px;">
-                            <button class="page-btn flex-center" id="prevBtn" onclick="changePage(-1)">
-                                <i class='bx bx-chevron-left'></i> Prev
-                            </button>
-                            <button class="page-btn flex-center" id="nextBtn" onclick="changePage(1)">
-                                Next <i class='bx bx-chevron-right'></i>
-                            </button>
+                            <button class="page-btn flex-center" id="prevBtn" onclick="changePage(-1)"><i class='bx bx-chevron-left'></i> Prev</button>
+                            <button class="page-btn flex-center" id="nextBtn" onclick="changePage(1)">Next <i class='bx bx-chevron-right'></i></button>
                         </div>
                     </div>
                 </div>
@@ -105,22 +94,19 @@
         </div>
     </main>
 
-<div id="editModal" class="custom-modal-overlay">
+    <div id="editModal" class="custom-modal-overlay">
         <div class="custom-modal">
             <div class="modal-header">
-                <h3><i class='bx bx-edit'></i> Edit Student Record</h3>
-                <button class="close-btn" onclick="closeEditModal()">
-                    <i class='bx bx-x'></i>
-                </button>
+                <h3><i class='bx bx-edit'></i> Edit Faculty Record</h3>
+                <button class="close-btn" onclick="closeEditModal()"><i class='bx bx-x'></i></button>
             </div>
             
             <div class="modal-body">
                 <input type="hidden" id="editId">
                 
-             
                 <div class="form-group">
-                    <label class="form-label">ID / Code (RFID)</label>
-                    <input type="text" id="editRfid" class="modern-input" style="width: 100%; box-sizing: border-box;">
+                    <label class="form-label">RFID Code</label>
+                    <input type="text" id="editFacultyCode" class="modern-input" style="width: 100%; box-sizing: border-box;">
                 </div>
                 
                 <div class="form-group">
@@ -129,15 +115,9 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Grade Level</label>
-                    <select id="editGrade" class="modern-select" style="width: 100%; box-sizing: border-box;">
-                        <option value="1">Grade 1</option>
-                        <option value="2">Grade 2</option>
-                        <option value="3">Grade 3</option>
-                        <option value="4">Grade 4</option>
-                        <option value="5">Grade 5</option>
-                        <option value="6">Grade 6</option>
-                    </select>
+                    <label class="form-label">Department</label>
+                    <select id="editDept" class="modern-select" style="width: 100%; box-sizing: border-box;">
+                        </select>
                 </div>
 
                 <div class="form-group">
@@ -145,9 +125,7 @@
                     <div class="photo-upload-box">
                         <div id="editPreviewContainer" class="photo-preview">
                             <img id="editImagePreview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
-                            <div id="editPlaceholder" style="color: #94a3b8;">
-                                <i class='bx bx-user' style="font-size: 24px;"></i>
-                            </div>
+                            <div id="editPlaceholder" style="color: #94a3b8;"><i class='bx bx-user' style="font-size: 24px;"></i></div>
                         </div>
                         <input type="file" id="editPhotoInput" accept="image/*" style="font-size: 12px; width: 100%; cursor: pointer;">
                     </div>
@@ -160,8 +138,7 @@
             </div>
         </div>
     </div>
-            
 
-    <script src="assets/js/manage.js"></script>
+    <script src="assets/js/manage-faculty.js"></script>
 </body>
 </html>

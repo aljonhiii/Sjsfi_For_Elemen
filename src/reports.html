@@ -13,23 +13,31 @@
         <h3 id="loading-text" style="margin-top: 20px; font-weight: 700; letter-spacing: 1px;">Processing...</h3>
     </div>
 
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="logo-circle">
-                <img id="sidebarLogo" src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo" onerror="this.src='https://via.placeholder.com/48/10b981/ffffff?text=SJ'">
-            </div>
-            <div class="brand-text">
-                <span class="brand-title">SJSFI</span>
-                <span class="brand-subtitle">Libray Attendance System</span>
-            </div>
+<aside class="sidebar">
+    <div class="brand">
+        <div class="logo-circle">
+            <img src="assets/images/sjsfi_school_logo.png" onerror="this.src='https://via.placeholder.com/48/10b981/ffffff?text=SJ'">
         </div>
-        <nav>
-            <a href="attendance.html" class="menu-item"><i class='bx bx-scan'></i> Scanner Mode</a>
-            <a href="manage.html" class="menu-item"><i class='bx bx-user-pin'></i> Student Roster</a>
-            <a href="reports.html" class="menu-item active"><i class='bx bx-bar-chart-alt-2'></i> Analytics & Reports</a>
-            <a href="add-students.html" class="menu-item"><i class='bx bxs-user-detail'></i> Manage Students</a>
-        </nav>
-    </aside>
+        <div class="brand-text">
+            <span class="brand-title">SJSFI</span>
+            <span class="brand-subtitle">Library System</span>
+        </div>
+    </div>
+    <nav>
+        <a href="attendance.html" class="menu-item"><i class='bx bx-scan'></i> Scanner Mode</a>
+        
+        <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Students</div>
+        <a href="add-students.html" class="menu-item"><i class='bx bxs-user-plus'></i> Register Student</a>
+        <a href="manage.html" class="menu-item"><i class='bx bx-user-pin'></i> Student Roster</a>
+        
+        <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Faculty</div>
+        <a href="add-faculty.html" class="menu-item"><i class='bx bxs-briefcase-alt-2'></i> Register Faculty</a>
+        <a href="manage-faculty.html" class="menu-item"><i class='bx bx-briefcase'></i> Faculty Roster</a>
+
+        <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">System</div>
+        <a href="reports.html" class="menu-item active"><i class='bx bx-bar-chart-alt-2'></i> Reports & Analytics</a>
+    </nav>
+</aside>
 
     <main class="main-content">
         <div class="header">

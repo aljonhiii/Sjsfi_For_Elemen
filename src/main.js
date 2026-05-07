@@ -287,8 +287,37 @@ ipcMain.handle('process-attendance', async (event, code) => {
         }
 
         // If STILL not found after trying Visitors AND Students...
-        if (!student) {
-            // We use TRIM to remove accidental spaces and COLLATE NOCASE for safety
+if (!student) {
+            const faculty = db.prepare("SELECT * FROM faculty WHERE TRIM(faculty_code) = ?").get(input);
+            
+            if (faculty) {
+                if (faculty.status === 0) return { success: false, error: "Faculty member is marked as Inactive." };
+                
+                console.log(`✅ FACULTY MATCH: ${faculty.full_name}`);
+                
+                const lastLog = db.prepare(`
+                    SELECT log_type FROM faculty_logs 
+                    WHERE faculty_id = ? 
+                    AND date(timestamp, 'localtime') = ? 
+                    ORDER BY id DESC LIMIT 1
+                `).get(faculty.id, todayLocal);
+
+                const newLogType = (lastLog && lastLog.log_type === 'TIME IN') ? 'TIME OUT' : 'TIME IN';
+                db.prepare(`INSERT INTO faculty_logs (faculty_id, log_type) VALUES (?, ?)`).run(faculty.id, newLogType);
+
+                // We return the exact same variable names so your frontend attendance.html doesn't break!
+                return { 
+                    success: true, 
+                    logType: newLogType, 
+                    studentName: faculty.full_name, 
+                    grade: faculty.department, // Send department in the 'grade' slot
+                    profilePic: faculty.profile_pic,
+                    studentCode: faculty.faculty_code,
+                    userType: 'FACULTY' // Flag it so the UI can change colors if you want
+                };
+            }
+
+            // If STILL not found after trying Visitors, Students, AND Faculty...
             const masterBadge = db.prepare(`
                 SELECT * FROM master_badges 
                 WHERE TRIM(badge_code) COLLATE NOCASE = TRIM(?)
@@ -299,7 +328,6 @@ ipcMain.handle('process-attendance', async (event, code) => {
                 return { success: false, action: "REGISTER_VISITOR", badgeCode: input }; 
             }
 
-            // If we reach here, it TRULY isn't in the database
             console.log("❌ CRITICAL: Record not found in any table.");
             return { success: false, error: `[${input}] not found. Unregistered Card.` };
         }
@@ -952,6 +980,237 @@ const massImport = db.transaction((rows) => {
         log.error(`User Alert: ${friendlyMessage} | Tech Details: ${error.message}`);
         
         return { success: false, error: friendlyMessage }; }
+});
+
+
+// ==========================================
+// 🏫 FACULTY DEPARTMENTS (DYNAMIC)
+// ==========================================
+ipcMain.handle('get-departments', async () => {
+    try {
+        const db = dbManager.getLiveDb();
+        const depts = db.prepare(`SELECT * FROM departments ORDER BY dept_name ASC`).all();
+        return { success: true, data: depts };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('add-department', async (event, name) => {
+    try {
+        const db = dbManager.getLiveDb();
+        db.prepare(`INSERT INTO departments (dept_name) VALUES (?)`).run(name);
+        return { success: true };
+    } catch (error) {
+        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return { success: false, error: "This department already exists!" };
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('delete-department', async (event, id) => {
+    try {
+        const db = dbManager.getLiveDb();
+        db.prepare(`DELETE FROM departments WHERE id = ?`).run(id);
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+});
+
+
+
+// ==========================================
+// 👨‍🏫 FACULTY CRUD (Add, Edit, Delete, Get)
+// ==========================================
+ipcMain.handle('get-faculty', async (event, isArchiveView = false) => {
+    try {
+        const db = dbManager.getReportDb(); 
+        const status = isArchiveView ? 0 : 1;
+        const orderBy = isArchiveView ? "deletedAt DESC" : "id DESC";
+        
+        const rows = db.prepare(`SELECT * FROM faculty WHERE status = ${status} ORDER BY ${orderBy}`).all();
+        return { success: true, data: rows };
+    } catch (error) {
+        const friendlyMessage = getFriendlyError(error);
+        log.error(`User Alert: ${friendlyMessage} | Tech Details: ${error.message}`);
+        return { success: false, error: friendlyMessage }; 
+    }
+});
+
+ipcMain.handle('add-faculty', async (event, facultyData) => {
+    if(activeYearFile !== 'current') return { success: false, error: "Cannot add while viewing past archive." };
+    if (dbManager.getIsArchiving()) return { success: false, error: "System is archiving." };
+    
+    try {
+        const db = dbManager.getLiveDb(); 
+        const { faculty_code, full_name, department, status, profile_pic_data, profile_pic_ext, addedAt } = facultyData;
+        let savedPicPath = null;
+        
+        if (profile_pic_data && profile_pic_ext) {
+            const imgDir = path.join(app.getPath('userData'), 'images');
+            if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+            
+            // Name the image after their faculty code
+            savedPicPath = path.join(imgDir, `fac_${faculty_code}.${profile_pic_ext}`);
+            fs.writeFileSync(savedPicPath, profile_pic_data.split(';base64,').pop(), { encoding: 'base64' });
+        }
+
+        const stmt = db.prepare(`INSERT INTO faculty (faculty_code, full_name, department, profile_pic, status, addedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+        const info = stmt.run(faculty_code, full_name, department, savedPicPath, status ? 1 : 0, addedAt);
+        
+        writeAuditLog("ADD_FACULTY", `Registered new faculty: ${full_name} (${faculty_code})`);
+        return { success: true, id: info.lastInsertRowid };
+        
+    } catch (error) { 
+        return { success: false, error: getFriendlyError(error) }; 
+    }
+});
+
+ipcMain.handle('edit-faculty', async (event, facultyData) => {
+    if (activeYearFile !== 'current') return { success: false, error: "Cannot edit while viewing archive." };
+    
+    try {
+        const db = dbManager.getLiveDb();
+        const { id, faculty_code, full_name, department, status, profile_pic_data, profile_pic_ext } = facultyData;
+        let savedPicPath = null;
+
+        if (profile_pic_data && profile_pic_ext) {
+            const imgDir = path.join(app.getPath('userData'), 'images');
+            savedPicPath = path.join(imgDir, `fac_${faculty_code}.${profile_pic_ext}`);
+            fs.writeFileSync(savedPicPath, profile_pic_data.split(';base64,').pop(), { encoding: 'base64' });
+        }
+
+        let dbResult;
+        if (savedPicPath) {
+            dbResult = db.prepare(`UPDATE faculty SET faculty_code = ?, full_name = ?, department = ?, status = ?, profile_pic = ? WHERE id = ?`)
+              .run(faculty_code, full_name, department, status ? 1 : 0, savedPicPath, id);
+        } else {
+            dbResult = db.prepare(`UPDATE faculty SET faculty_code = ?, full_name = ?, department = ?, status = ? WHERE id = ?`)
+              .run(faculty_code, full_name, department, status ? 1 : 0, id);
+        }
+
+        if (dbResult.changes === 0) return { success: false, error: `Database could not find faculty ID: ${id}` };
+
+        writeAuditLog("EDIT_FACULTY", `Updated profile for faculty: ${full_name}`);
+        return { success: true };
+        
+    } catch (error) {
+        return { success: false, error: getFriendlyError(error) }; 
+    }
+});
+
+ipcMain.handle('delete-faculty', async (event, id) => {
+    if(activeYearFile !== 'current') return { success: false, error: "Cannot delete while viewing archive." }; 
+    try {
+        const db = dbManager.getLiveDb();
+        const currentTime = new Date().toLocaleString('en-US');
+        
+        const target = db.prepare('SELECT full_name FROM faculty WHERE id = ?').get(id);
+        const name = target ? target.full_name : `Unknown (ID: ${id})`;
+
+        const result = db.prepare('UPDATE faculty SET status = 0, deletedAt = ? WHERE id = ?').run(currentTime, id);
+
+        if (result.changes > 0) {
+            writeAuditLog("DELETE_FACULTY", `Archived faculty member: ${name}`);
+            return { success: true };
+        } else {
+            return { success: false, error: "Faculty not found." };
+        }
+    } catch (error) { 
+        return { success: false, error: getFriendlyError(error) };
+    }
+});
+
+ipcMain.handle('restore-faculty', async (event, id) => {
+    if (activeYearFile !== 'current') return { success: false, error: "Cannot restore in archive mode." };
+    try {
+        const db = dbManager.getLiveDb();
+        const target = db.prepare('SELECT full_name FROM faculty WHERE id = ?').get(id);
+        const name = target ? target.full_name : `Unknown (ID: ${id})`;
+        
+        const result = db.prepare(`UPDATE faculty SET status = 1, deletedAt = NULL WHERE id = ?`).run(id);
+        
+        if (result.changes > 0) {
+            writeAuditLog("RESTORE_FACULTY", `Restored faculty profile: ${name}`);
+            return { success: true };
+        } else {
+            return { success: false, error: "Faculty not found." };
+        }
+    } catch (error) { 
+        return { success: false, error: getFriendlyError(error) }; 
+    }
+});
+
+
+// ==========================================
+// 📂 IMPORT FACULTY FROM CSV
+// ==========================================
+ipcMain.handle('import-faculty-csv', async (event) => {
+    if (dbManager.getIsArchiving()) return { success: false, error: "System is archiving. Please wait." };
+    try {
+        const { canceled, filePaths } = await dialog.showOpenDialog({
+            title: 'Import Faculty from CSV', 
+            filters: [{ name: 'CSV Files', extensions: ['csv'] }], 
+            properties: ['openFile']
+        });
+        
+        if (canceled || filePaths.length === 0) return { success: false, error: 'Cancelled' };
+
+        const currentTime = new Date().toLocaleString('en-US');
+        const fileContent = fs.readFileSync(filePaths[0], 'utf-8');
+        const lines = fileContent.split(/\r?\n/); 
+        if (lines.length < 2) return { success: false, error: 'CSV file is empty.' };
+
+        // Ensure the CSV has headers matching our column names
+        const headers = lines[0].split(',').map(h => h.replace(/(^"|"$)/g, '').trim().toLowerCase());
+        const colMap = {
+            faculty_code: headers.indexOf('faculty_code'), 
+            full_name: headers.indexOf('full_name'),
+            department: headers.indexOf('department'), 
+            status: headers.indexOf('status')
+        };
+        
+        if (colMap.faculty_code === -1 || colMap.full_name === -1) {
+            return { success: false, error: "Missing required columns. Ensure headers include 'faculty_code' and 'full_name'." };
+        }
+
+        const db = dbManager.getLiveDb();
+        const insertStmt = db.prepare(`INSERT OR IGNORE INTO faculty (faculty_code, full_name, department, status, addedAt) VALUES (?, ?, ?, ?, ?)`);
+
+        const massImport = db.transaction((rows) => {
+            let importCount = 0;
+            let skippedCount = 0;
+            
+            for (let i = 1; i < rows.length; i++) {
+                if (!rows[i].trim()) continue; 
+                
+                const rowData = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/(^"|"$)/g, '').trim());
+                const f_code = rowData[colMap.faculty_code];
+                const f_name = rowData[colMap.full_name];
+                const dept = colMap.department !== -1 ? rowData[colMap.department] : '';
+                let status = 1; 
+                
+                if (colMap.status !== -1 && rowData[colMap.status] !== undefined) {
+                    const parsedStatus = parseInt(rowData[colMap.status]);
+                    if (!isNaN(parsedStatus)) status = parsedStatus;
+                }
+                
+                if (f_code && f_name) { 
+                    const info = insertStmt.run(f_code, f_name, dept, status, currentTime); 
+                    if (info.changes > 0) importCount++; 
+                    else skippedCount++;
+                } else {
+                    skippedCount++;
+                }
+            }
+            writeAuditLog("IMPORT_FACULTY", `Mass imported ${importCount} faculty via CSV.`);
+            return importCount;
+        });
+        
+        return { success: true, count: massImport(lines) };
+    } catch (error) { 
+        return { success: false, error: getFriendlyError(error) }; 
+    }
 });
 
 

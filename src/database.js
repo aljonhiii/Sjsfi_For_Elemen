@@ -85,6 +85,43 @@ liveDb.exec(`
         level_name TEXT UNIQUE NOT NULL
     )
 `)
+
+
+// --- FACULTY & DEPARTMENTS SYSTEM ---
+
+// 1. Create the dynamic departments table (Starts completely empty)
+liveDb.exec(`   
+    CREATE TABLE IF NOT EXISTS departments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        dept_name TEXT UNIQUE NOT NULL
+    )
+`);
+
+// 2. Create the Faculty table
+liveDb.exec(`
+    CREATE TABLE IF NOT EXISTS faculty (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        faculty_code TEXT UNIQUE,
+        full_name TEXT,
+        sex TEXT, 
+        department TEXT,
+        profile_pic TEXT, 
+        status INTEGER DEFAULT 1, 
+        addedAt TEXT,
+        deletedAt TEXT
+    );
+`);
+
+// 3. Create the Faculty Logs table (for RFID taps)
+liveDb.exec(`
+    CREATE TABLE IF NOT EXISTS faculty_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        faculty_id INTEGER, 
+        log_type TEXT, 
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(faculty_id) REFERENCES faculty(id)
+    );
+`);
 }
 
 // --- 2. INITIALIZE REPORT DB (VIEWER) ---
