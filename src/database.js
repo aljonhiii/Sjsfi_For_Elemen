@@ -122,6 +122,11 @@ liveDb.exec(`
         FOREIGN KEY(faculty_id) REFERENCES faculty(id)
     );
 `);
+
+
+
+liveDb.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_student_code ON students(student_code)`);
+liveDb.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_faculty_code ON faculty(faculty_code)`);
 }
 
 // --- 2. INITIALIZE REPORT DB (VIEWER) ---

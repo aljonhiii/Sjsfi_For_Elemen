@@ -1,34 +1,34 @@
 console.log("🟢 The Faculty Javascript file is successfully loaded!");
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // ==========================================
 // 1. LOADING SCREEN LOGIC
 // ==========================================
 function showLoading(message = "Processing...") {
+    const overlay = document.getElementById('loading-overlay');
     document.getElementById('loading-text').innerText = message;
-    document.getElementById('loading-overlay').classList.remove('hidden');
-    document.getElementById('loading-overlay').style.display = 'flex';
+    overlay.classList.remove('hidden');
 }
 
 function hideLoading() {
     document.getElementById('loading-overlay').classList.add('hidden');
-    document.getElementById('loading-overlay').style.display = 'none';
-}   
+}
 
 // ==========================================
 // 2. CSV IMPORT LOGIC
 // ==========================================
 async function handleImportCSV() {
     if (confirm("Ready to import? The system will ignore duplicates and process your CSV file.")) {
-        showLoading('Importing....');
+        showLoading('Importing Faculty Data...');
         try {
             const result = await window.api.importFacultyCSV();
             
             if (result.success) {
-                showModal('success', 'Import Complete', `Successfully imported ${result.count} faculty from the CSV file.`);
+                showModal('success', 'Import Complete', `Successfully imported ${result.count} faculty members.`);
             } else if (result.error !== 'Cancelled') {
                 showModal('error', 'Import Failed', result.error);
             }
+        } catch (err) {
+            showModal('error', 'System Error', err.message);
         } finally {
             hideLoading();
         }
@@ -36,20 +36,26 @@ async function handleImportCSV() {
 }
 
 // ==========================================
-// 3. LIVE IMAGE PREVIEW LOGIC
+// 3. FIXED LIVE IMAGE PREVIEW LOGIC
 // ==========================================
 document.getElementById('photoInput').addEventListener('change', function(e) {
     const img = document.getElementById('photoPreview');
     const icon = document.getElementById('photoPlaceholder');
     
     if (this.files && this.files[0]) {
-        img.src = URL.createObjectURL(this.files[0]);
-        img.style.display = 'block';
-        icon.style.display = 'none';
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            img.classList.remove('hidden'); // Show the image
+            icon.classList.add('hidden');    // Hide the user icon
+        }
+        
+        reader.readAsDataURL(this.files[0]);
     } else {
         img.src = '';
-        img.style.display = 'none';
-        icon.style.display = 'block';
+        img.classList.add('hidden');
+        icon.classList.remove('hidden');
     }
 });
 
@@ -58,8 +64,6 @@ document.getElementById('photoInput').addEventListener('change', function(e) {
 // ==========================================
 const codeInput = document.getElementById('facultyCode');
 const nameInput = document.getElementById('fullName');
-
-// Assuming you have <span id="codeError"> and <span id="nameError"> in your HTML
 const codeError = document.getElementById('codeError');
 const nameError = document.getElementById('nameError');
 
@@ -78,7 +82,8 @@ if (codeInput) {
 
 if (nameInput) {
     nameInput.addEventListener('input', function() {
-        this.value = this.value.replace(/[^a-zA-Z\s\.\-]/g, ''); // Letters, spaces, dots, hyphens only
+        // Allowing letters, spaces, dots, and hyphens
+        this.value = this.value.replace(/[^a-zA-Z\s\.\-]/g, ''); 
         if (this.value.length > 0 && this.value.trim().length === 0) {
             this.classList.add('invalid');
             if(nameError) nameError.innerText = "Name cannot be just empty spaces.";
@@ -99,44 +104,37 @@ function showModal(type, title, message) {
     const modalMessage = document.getElementById('modalMessage');
     const modalBtn = document.getElementById('modalBtn');
 
-    if(!modal) return alert(`${title}: ${message}`); // Failsafe if HTML is missing
+    if(!modal) return alert(`${title}: ${message}`);
 
     modalTitle.innerText = title;
     modalMessage.innerText = message;
 
     if (type === 'success') {
-        modalIcon.className = 'modal-icon success';
-        modalIcon.innerHTML = "<i class='bx bx-check-circle'></i>";
-        modalBtn.className = 'btn-modal';
-        modalBtn.innerText = 'Success!';
+        modalIcon.innerHTML = "<i class='bx bx-check-circle' style='color: var(--success-color);'></i>";
+        modalIcon.className = "success-indicator"; // For JS tracking
+        modalBtn.innerText = 'Continue';
     } else {
-        modalIcon.className = 'modal-icon error';
-        modalIcon.innerHTML = "<i class='bx bx-x-circle'></i>";
-        modalBtn.className = 'btn-modal error-btn';
-        modalBtn.innerText = 'Got it';
+        modalIcon.innerHTML = "<i class='bx bx-x-circle' style='color: var(--danger-color);'></i>";
+        modalIcon.className = "error-indicator";
+        modalBtn.innerText = 'Try Again';
     }
     modal.classList.add('active');
 }
 
 function closeModal() {
     const modal = document.getElementById('customModal');
-    const modalTitle = document.getElementById('modalTitle').innerText;
+    const indicator = document.getElementById('modalIcon').className;
     
     modal.classList.remove('active');
 
-    if (document.getElementById('modalIcon').classList.contains('success')) {
-        // Redirect to roster on successful enrollment
-        if (modalTitle.includes("Registered") || modalTitle.includes("Complete")) {
-            window.location.href = "manage-faculty.html"; 
-        } else {
-            // For Department additions, just refresh the page
-            window.location.reload(); 
-        }
+    // Only redirect/reload if it was a success modal
+    if (indicator === 'success-indicator') {
+        window.location.href = "manage-faculty.html"; 
     }
-}   
+}
 
 // ==========================================
-// 6. FORM SUBMISSION LOGIC (BASE64)
+// 6. FORM SUBMISSION LOGIC
 // ==========================================
 document.getElementById('addFacultyForm').addEventListener('submit', async (e) => {
     e.preventDefault(); 
@@ -144,38 +142,33 @@ document.getElementById('addFacultyForm').addEventListener('submit', async (e) =
     const codeVal = codeInput.value.trim();
     const nameVal = nameInput.value.trim();
     const deptVal = document.getElementById('department').value;
+    const saveBtn = document.getElementById('saveBtn');
 
+    // Validation
     if (codeVal.length !== 10) {
-        codeInput.focus();
-        showModal('error', 'Invalid ID Code', 'The RFID code must be exactly 10 digits long.');
+        showModal('error', 'Invalid ID', 'RFID must be 10 digits.');
         return;
     }
     if (!nameVal) {
-        nameInput.focus();
-        showModal('error', 'Missing Full Name', 'Please type the faculty member\'s full name.');
+        showModal('error', 'Missing Name', 'Please enter the full name.');
         return;
     }
     if (!deptVal) {
-        document.getElementById('department').focus();
-        showModal('error', 'Department Missing', 'Please select a Department.');
+        showModal('error', 'No Department', 'Please assign a department.');
         return;
     }
 
-    const submitBtn = document.querySelector('.btn-confirm');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Processing...`;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i> Saving...`;
     
-    const currentTime = new Date().toLocaleString('en-US', { 
-        year: 'numeric', month: 'short', day: 'numeric', 
-        hour: '2-digit', minute: '2-digit' 
-    });
+    const currentTime = new Date().toLocaleString('en-US');
 
     try {
         const data = {
             faculty_code: codeVal, 
             full_name: nameVal,
             department: deptVal,
-            status: 1, // 1 for Active
+            status: 1,
             profile_pic_data: null,
             profile_pic_ext: null,
             addedAt: currentTime
@@ -188,8 +181,8 @@ document.getElementById('addFacultyForm').addEventListener('submit', async (e) =
             data.profile_pic_ext = file.name.split('.').pop(); 
             
             const reader = new FileReader();
-            reader.onload = async function(e) {
-                data.profile_pic_data = e.target.result; 
+            reader.onload = async function(event) {
+                data.profile_pic_data = event.target.result; 
                 await sendDataToBackend(data);
             };
             reader.readAsDataURL(file);
@@ -198,132 +191,98 @@ document.getElementById('addFacultyForm').addEventListener('submit', async (e) =
         }
 
     } catch (err) {
-        showModal('error', 'System Error', `Background error: ${err.message}`);
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i class='bx bx-save'></i> Register Faculty`;
+        showModal('error', 'System Error', err.message);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = `Save Faculty Member`;
     }
 });
 
 async function sendDataToBackend(data) {
-    const submitBtn = document.querySelector('.btn-confirm');
-    showLoading('Processing...');
+    const saveBtn = document.getElementById('saveBtn');
     try {
         const result = await window.api.addFaculty(data);
         
         if (result && result.success) {
-            document.getElementById('addFacultyForm').reset();
-            document.getElementById('photoPreview').style.display = 'none';
-            document.getElementById('photoPreview').src = '';
-            document.getElementById('photoPlaceholder').style.display = 'block';
-
-            showModal('success', 'Faculty Registered!', `${data.full_name} has been successfully registered.`);
+            showModal('success', 'Faculty Enrolled!', `${data.full_name} is now registered.`);
         } else {
-            const errorMsg = result.error ? result.error.toLowerCase() : '';
-            if (errorMsg.includes('unique') || errorMsg.includes('duplicate')) {
-                document.getElementById('facultyCode').focus();
-                showModal('error', 'ID Already Taken', `The RFID Code "${data.faculty_code}" is already registered.`);
+            if (result.error.includes('UNIQUE')) {
+                showModal('error', 'Duplicate ID', 'This RFID Code is already assigned to someone else.');
             } else {
-                showModal('error', 'Registration Failed', `Error: ${result.error}`);
+                showModal('error', 'Failed', result.error);
             }
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = `Save Faculty Member`;
         }
     } catch (err) {
-        showModal('error', 'System Error', `Background error: ${err.message}`);
-    } finally {
-        hideLoading();
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i class='bx bx-save'></i> Register Faculty`; 
+        showModal('error', 'Critical Error', err.message);
+        saveBtn.disabled = false;
     }
 }
 
 // ==========================================
 // 7. DYNAMIC DEPARTMENT MANAGEMENT
 // ==========================================
-
 async function refreshDeptData() {
-    const res = await window.api.getDepartments();
-    if (!res.success) return;
+    try {
+        const res = await window.api.getDepartments();
+        if (!res.success) return;
 
-    // 1. Update the Select Dropdown in the main form
-    const dropdown = document.getElementById('department');
-    if(dropdown) {
-        dropdown.innerHTML = '<option value="" disabled selected>Select Department...</option>';
-        res.data.forEach(dept => {
-            dropdown.innerHTML += `<option value="${dept.dept_name}">${dept.dept_name}</option>`;
-        });
-    }
+        const dropdown = document.getElementById('department');
+        if(dropdown) {
+            dropdown.innerHTML = '<option value="" disabled selected>Select Department</option>';
+            res.data.forEach(dept => {
+                dropdown.innerHTML += `<option value="${dept.dept_name}">${dept.dept_name}</option>`;
+            });
+        }
 
-    // 2. Update the List inside the Management Modal (if it exists on your page)
-    const listContainer = document.getElementById('deptListContainer');
-    if (listContainer) {
-        listContainer.innerHTML = res.data.map(dept => `
-            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); padding: 10px 15px; margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <span style="font-weight: 600; font-size: 14px;">${dept.dept_name}</span>
-                <button onclick="removeDepartment(${dept.id})" style="background: transparent; color: #ef4444; border: none; cursor: pointer; font-size: 18px;">
-                    <i class='bx bx-trash'></i>
-                </button>
-            </div>
-        `).join('');
+        const listContainer = document.getElementById('deptListContainer');
+        if (listContainer) {
+            listContainer.innerHTML = res.data.map(dept => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 15px; margin-bottom: 8px; border-radius: 10px; border: 1px solid var(--border-color);">
+                    <span style="font-weight: 600; font-size: 14px; color: var(--text-primary);">${dept.dept_name}</span>
+                    <button onclick="removeDepartment(${dept.id})" style="background: #fee2e2; color: #ef4444; border: none; cursor: pointer; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: 0.2s;">
+                        <i class='bx bx-trash-alt'></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        console.error("Dept Load Error:", e);
     }
 }
 
-// Attach these to your 'Manage Departments' button in the HTML
-function openDeptModal() { document.getElementById('deptModal').classList.add('active'); refreshDeptData(); }
-function closeDeptModal() { document.getElementById('deptModal').classList.remove('active'); }
+function openDeptModal() { 
+    document.getElementById('deptModal').classList.add('active'); 
+    refreshDeptData(); 
+}
+
+function closeDeptModal() { 
+    document.getElementById('deptModal').classList.remove('active'); 
+}
 
 async function addNewDepartment(event) {
     const input = document.getElementById('newDeptInput');
-    const submitBtn = event.target; 
     const name = input.value.trim();
     
-    if (!name) {
-        showModal('error', 'Empty Input', 'Please enter a name for the Department.');
-        input.focus();
-        return;
-    }
-
-    if (name.length < 2) {
-        showModal('error', 'Invalid Input', 'The name is too short. Please be more descriptive.');
-        return;
-    }
-
-    const regex = /^[a-zA-Z0-9\s\-\.]+$/;
-    if (!regex.test(name)) {
-        showModal('error', 'Invalid Characters', 'Please use only letters, numbers, hyphens, and spaces.');
-        return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = `<i class='bx bx-loader-alt bx-spin'></i>`;
-    input.readOnly = true;
+    if (!name) return;
 
     try {
         const res = await window.api.addDepartment(name);
-        
         if (res.success) {
             input.value = ''; 
-            showModal('success', 'Department Added', `${name} is now available in the dropdown.`);
-            
-            setTimeout(() => { window.location.reload(); }, 1500);
-
+            refreshDeptData();
         } else {
-            showModal('error', 'Entry Blocked', res.error);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Add';
-            input.readOnly = false;
+            alert(res.error);
         }
     } catch (err) {
-        showModal('error', 'System Error', 'An unexpected error occurred. Please try again.');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Add';
-        input.readOnly = false;
+        alert("Error adding department");
     }
 }
 
 async function removeDepartment(id) {
-    if (confirm("Are you sure? This will remove the department from the system.")) {
+    if (confirm("Remove this department? Members already assigned to it will keep their records but the category will be gone.")) {
         await window.api.deleteDepartment(id);
         refreshDeptData();
-        window.location.reload();
     }
 }
 

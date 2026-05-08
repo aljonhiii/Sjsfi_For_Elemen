@@ -770,7 +770,9 @@ const activeVisitors = db.prepare(`
 ipcMain.handle('get-logs-range', async (event, start, end) => {
     try {
         const db = dbManager.getReportDb(); 
-const query = `
+        
+        const query = `
+            /* 1. STUDENTS SECTION */
             SELECT 
                 students.student_code AS student_code, 
                 students.full_name AS full_name, 
@@ -786,6 +788,23 @@ const query = `
 
             UNION ALL
 
+            /* 2. FACULTY SECTION */
+            SELECT 
+                faculty.faculty_code AS student_code, 
+                faculty.full_name AS full_name, 
+                faculty.department AS grade_level, 
+                'FACULTY' AS user_type,
+                faculty_logs.log_type, 
+                datetime(faculty_logs.timestamp, 'localtime') as timestamp,
+                NULL AS mobile,
+                NULL AS email
+            FROM faculty_logs 
+            JOIN faculty ON faculty_logs.faculty_id = faculty.id 
+            WHERE DATE(faculty_logs.timestamp, 'localtime') BETWEEN ? AND ? 
+
+            UNION ALL
+
+            /* 3. VISITORS SECTION */
             SELECT 
                 IFNULL(visitor_logs.badge_code, 'VISITOR') AS student_code, 
                 visitor_logs.visitor_name AS full_name, 
@@ -800,11 +819,12 @@ const query = `
 
             ORDER BY timestamp DESC`;
 
-        const logs = db.prepare(query).all(start, end, start, end);
+        // 🌟 CRITICAL: We now have 3 sections, so we pass (start, end) THREE times.
+        const logs = db.prepare(query).all(start, end, start, end, start, end);
+        
         return { success: true, data: logs };
 
     } catch (error) {
-        // This is what translates the error for your log file
         const friendlyMessage = getFriendlyError(error);
         log.error(`User Alert: ${friendlyMessage} | Tech Details: ${error.message}`);
         return { success: false, error: friendlyMessage };

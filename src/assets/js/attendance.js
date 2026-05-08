@@ -283,7 +283,7 @@ let newProfileHTML = '';
     
     // 3. Create a "STAFF" badge for teachers
     const staffBadge = isFaculty 
-        ? `<span style="background: #4f46e5; color: white; padding: 2px 10px; border-radius: 6px; font-size: 11px; vertical-align: middle; margin-left: 10px; font-weight: 800; letter-spacing: 0.5px;">STAFF / FACULTY</span>` 
+        ? `<span style="background: #4f46e5; color: white; padding: 2px 10px; border-radius: 6px; font-size: 11px; vertical-align: middle; margin-left: 10px; font-weight: 800; letter-spacing: 0.5px;">STAFF</span>` 
         : '';
 
     // 4. Generate the Modern Card HTML

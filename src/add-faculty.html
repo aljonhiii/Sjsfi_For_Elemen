@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Add New Faculty | SJSFI Library</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Faculty | SJSFI Library</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/add-faculty.css">
 </head>
 <body>
 
+    <!-- Loading Screen -->
     <div id="loading-overlay" class="hidden">
         <div class="spinner"></div>
-        <h3 id="loading-text">Processing...</h3>
+        <h3 id="loading-text" style="margin:0; font-weight: 600;">Processing Record...</h3>
     </div>
 
+    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="brand">
             <div class="logo-circle">
-                <img src="assets/images/sjsfi_school_logo.png" onerror="this.src='https://via.placeholder.com/48/10b981/ffffff?text=SJ'">
+                <img src="assets/images/sjsfi_school_logo.png" alt="SJSFI Logo">
             </div>
             <div class="brand-text">
                 <span class="brand-title">SJSFI</span>
@@ -26,63 +29,58 @@
         <nav>
             <a href="attendance.html" class="menu-item"><i class='bx bx-scan'></i> Scanner Mode</a>
             
-            <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Students</div>
+            <div style="padding: 15px 15px 10px; font-size: 11px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Students</div>
             <a href="add-students.html" class="menu-item"><i class='bx bxs-user-plus'></i> Register Student</a>
             <a href="manage.html" class="menu-item"><i class='bx bx-user-pin'></i> Student Roster</a>
             
-            <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">Faculty</div>
+            <div style="padding: 15px 15px 10px; font-size: 11px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Faculty</div>
             <a href="add-faculty.html" class="menu-item active"><i class='bx bxs-briefcase-alt-2'></i> Register Faculty</a>
             <a href="manage-faculty.html" class="menu-item"><i class='bx bx-briefcase'></i> Faculty Roster</a>
 
-            <div style="padding: 10px 15px; font-size: 11px; color: #64748b; font-weight: bold; text-transform: uppercase;">System</div>
+            <div style="padding: 15px 15px 10px; font-size: 11px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">System</div>
             <a href="reports.html" class="menu-item"><i class='bx bx-bar-chart-alt-2'></i> Reports & Analytics</a>
         </nav>
     </aside>
 
     <main class="main-content">
-        
+        <!-- Top Toolbar -->
         <div class="header-container">
             <a href="manage-faculty.html" class="btn-back">
                 <i class='bx bx-left-arrow-alt'></i> Back to Roster
             </a>
             
-            <div style="display: flex; gap: 12px;">
-                <button type="button" id="openBadgeModalBtn" class="btn-import btn-visitor">
-                    <i class='bx bx-id-card'></i> Visitors Cards (RFID)
-                </button>
-                
-                <button type="button" id="importCsvBtn" class="btn-import btn-csv" onclick="handleImportCSV()">
-                    <i class='bx bx-upload'></i> Import CSV
-                </button>
-            </div>
+            <button type="button" id="importCsvBtn" class="btn-import" onclick="handleImportCSV()">
+                <i class='bx bx-upload'></i> Import Faculty CSV
+            </button>
         </div>
 
+        <!-- Main Enrollment Card -->
         <div class="card">
             <div class="card-header">
-                <h2><i class='bx bx-briefcase-alt-2'></i> Enroll New Faculty/Staff</h2>
-                <p>Register faculty members to the library database to enable RFID scanning and tracking.</p>
+                <h2>Enroll New Faculty/Staff</h2>
+                <p>Add faculty members to the database to enable RFID library tracking and session logs.</p>
             </div>
             
             <form id="addFacultyForm">
                 <div class="form-group">
-                    <label>Faculty ID / RFID Code (10 Digits)</label>
-                    <input type="text" id="facultyCode" class="modern-input" placeholder="e.g. 1234567890" maxlength="10" autocomplete="off">
+                    <label>Faculty ID / RFID Card (10 Digits)</label>
+                    <input type="text" id="facultyCode" class="modern-input" placeholder="Scan or type 10-digit code" maxlength="10" autocomplete="off">
                     <span id="codeError" class="error-text"></span>
                 </div>
                 
                 <div class="form-group">
                     <label>Full Name</label>
-                    <input type="text" id="fullName" class="modern-input" placeholder="Last Name, First Name" autocomplete="off">
+                    <input type="text" id="fullName" class="modern-input" placeholder="Last Name, First Name Middle Name" autocomplete="off">
                     <span id="nameError" class="error-text"></span>
                 </div>
 
                 <div class="form-group">
-                    <label>Department / Office</label>
+                    <label>Department / Office Assignment</label>
                     <div style="display: flex; gap: 10px;">
-                        <select id="department" class="modern-input" style="flex: 1;">
-                            <option value="" disabled selected>Loading departments...</option>
+                        <select id="department" class="modern-input" style="flex: 1; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;">
+                            <option value="" disabled selected>Select Department</option>
                         </select>
-                        <button type="button" onclick="openDeptModal()" class="btn-import" style="padding: 0 15px; background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-primary);">
+                        <button type="button" onclick="openDeptModal()" class="btn-import" style="padding: 0 15px; background: #fff; border: 2px solid #f1f5f9; color: var(--text-secondary);">
                             <i class='bx bx-cog'></i>
                         </button>
                     </div>
@@ -90,66 +88,52 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Profile Picture (Optional)</label>
-                    <div class="photo-upload-container">
-                        <div class="preview-circle">
+                    <label>Faculty Profile Photo</label>
+                    <div class="photo-upload-area">
+                        <div class="preview-box">
                             <i id="photoPlaceholder" class='bx bx-user'></i>
-                            <img id="photoPreview" src="">
+                            <img id="photoPreview" src="" class="hidden">
                         </div>
-                        <div class="upload-input-area">
-                            <input type="file" id="photoInput" class="modern-file-input" accept="image/png, image/jpeg, image/jpg">
+                        <div style="flex: 1;">
+                            <input type="file" id="photoInput" accept="image/png, image/jpeg" style="font-size: 12px; color: var(--text-secondary);">
+                            <p style="margin: 5px 0 0 0; font-size: 11px; color: var(--text-secondary); font-weight: 500;">PNG or JPG. Max 2MB.</p>
                         </div>
                     </div>
                 </div>
                 
-                <button type="submit" class="btn-primary" id="saveBtn">Save Faculty Record</button>
+                <button type="submit" class="btn-primary" id="saveBtn">Save Faculty Member</button>
             </form>
         </div>
     </main>
 
+    <!-- Success/Error Alert Modal -->
     <div id="customModal" class="custom-modal-overlay">
         <div class="custom-modal" style="max-width: 400px; text-align: center; padding: 40px 30px;">
-            <div id="modalIcon" class="modal-icon"></div>
-            <h3 id="modalTitle" style="margin-bottom: 10px; font-size: 24px; color: var(--text-primary); font-weight: 800;">Title</h3>
-            <p id="modalMessage" style="margin-bottom: 25px; color: var(--text-secondary); line-height: 1.5;">Message goes here.</p>
-            <button id="modalBtn" onclick="closeModal()" class="btn-confirm" style="width: 100%;">Done</button>
+            <div id="modalIcon" style="font-size: 50px; margin-bottom: 15px;"></div>
+            <h3 id="modalTitle" style="margin-bottom: 10px; font-size: 22px; font-weight: 800;">Success!</h3>
+            <p id="modalMessage" style="margin-bottom: 25px; color: var(--text-secondary); line-height: 1.5; font-size: 14px;">Record saved.</p>
+            <button id="modalBtn" onclick="closeModal()" class="btn-primary" style="margin-top:0;">Continue</button>
         </div>
     </div>
 
+    <!-- Manage Departments Modal -->
     <div id="deptModal" class="custom-modal-overlay">
-        <div class="custom-modal" style="max-width: 450px;">
+        <div class="custom-modal">
             <div class="modal-header">
-                <h3><i class='bx bx-building-house' style="color: var(--primary-color);"></i> Manage Departments</h3>
+                <h3><i class='bx bx-building-house' style="color: var(--primary-color);"></i> Faculty Departments</h3>
                 <button type="button" onclick="closeDeptModal()" class="close-btn"><i class='bx bx-x'></i></button>
             </div>
             
             <div class="modal-body">
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <input type="text" id="newDeptInput" class="modern-input" placeholder="Ex: Senior High Faculty" style="flex: 1;">
-                    <button type="button" onclick="addNewDepartment(event)" class="btn-confirm" style="padding: 0 20px;">Add</button>
+                    <input type="text" id="newDeptInput" class="modern-input" placeholder="New Department Name" style="flex: 1;">
+                    <button type="button" onclick="addNewDepartment(event)" class="btn-primary" style="width: auto; padding: 0 20px; margin-top: 0; font-size: 13px;">Add</button>
                 </div>
 
-                <div class="badge-list-title">Existing Departments</div>
-                <div id="deptListContainer" class="badge-list-container" style="max-height: 250px; overflow-y: auto;">
-                    </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="masterBadgeModal" class="custom-modal-overlay">
-        <div class="custom-modal" style="max-width: 480px;">
-            <div class="modal-header">
-                <h3><i class='bx bx-id-card' style="color: #f97316;"></i> Manage Visitors Cards</h3>
-                <button id="closeBadgeModalBtn" class="close-btn"><i class='bx bx-x'></i></button>
-            </div>
-            <div class="modal-body">
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="newBadgeInput" class="modern-input" placeholder="Scan RFID (10 digits)" maxlength="10" inputmode="numeric" style="flex: 1; font-family: monospace; letter-spacing: 1px;">
-                    <button type="button" id="submitNewBadgeBtn" class="btn-confirm" style="flex: 0 0 auto; padding: 0 20px;">Add</button>
+                <div style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Registered Departments</div>
+                <div id="deptListContainer" style="max-height: 250px; overflow-y: auto;">
+                    <!-- Department list items populated by JS -->
                 </div>
-                <div id="badgeFormStatus" class="badge-status-text"></div>
-                <div class="badge-list-title">Active Visitor Passes</div>
-                <div id="badgeListContainer" class="badge-list-container"></div>
             </div>
         </div>
     </div>

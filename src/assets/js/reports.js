@@ -62,6 +62,10 @@
             } catch (error) {
                 console.error("Could not load base64 logo", error);
             }
+             await loadDepartmentFilters();
+
+
+
 
             // 3. Setup Archives & Load Data
             await loadArchiveUI();
@@ -221,10 +225,19 @@ function renderLogsTable() {
         function changePage(dir) { currentPage += dir; renderLogsTable(); }
 
 // ✅ DYNAMIC KEYWORD VERSION
+// ✅ DYNAMIC KEYWORD VERSION (UPDATED FOR FACULTY)
 function isGradeInDept(gradeValue, dept) {
     if (dept === 'ALL' || !dept) return true;
     
-    const gradeStr = String(gradeValue || "").toUpperCase();
+    const gradeStr = String(gradeValue || "").trim().toUpperCase();
+    const deptStr = String(dept || "").trim().toUpperCase();
+
+    // 🌟 THE FIX: If the exact department name matches the dropdown, return true immediately!
+    if (gradeStr === deptStr) {
+        return true;
+    }
+    
+    // Fallback logic for grouping students by number
     const num = parseInt(gradeStr.replace(/\D/g, ''), 10); // Extracts the number
 
     if (dept === 'Elementary') {
@@ -238,7 +251,36 @@ function isGradeInDept(gradeValue, dept) {
         return (num === 11 || num === 12) || 
                ['STEM', 'ABM', 'HUMSS', 'GAS', 'TVL'].some(strand => gradeStr.includes(strand));
     }
+    
     return false;
+}
+
+
+
+// ==========================================
+// 🏫 DYNAMIC DEPARTMENT DROPDOWNS
+// ==========================================
+async function loadDepartmentFilters() {
+    try {
+        // We ask the backend for the live list of departments
+        const response = await window.api.getDepartments();
+        
+        if (response.success) {
+            // We want to update BOTH dropdowns (one for Logs, one for Summary)
+            const logsDropdown = document.getElementById('deptFilterLogs');
+            const summaryDropdown = document.getElementById('deptFilterSummary');
+            
+            // Loop through the database results and add them as <option> tags
+            response.data.forEach(dept => {
+                const optionHTML = `<option value="${dept.dept_name}">${dept.dept_name}</option>`;
+                
+                if (logsDropdown) logsDropdown.innerHTML += optionHTML;
+                if (summaryDropdown) summaryDropdown.innerHTML += optionHTML;
+            });
+        }
+    } catch (error) {
+        console.error("Failed to load departments into dropdowns:", error);
+    }
 }
 
         // --- PDF LOGS ---
@@ -322,7 +364,7 @@ const start = document.getElementById('logStart').value;
         pairedSessions.forEach(s => {
             fullTableRows += `<tr>
                 <td style="padding: 10px; border: 1px solid #d1e8d8;">
-                    <div style="font-weight: 800; color: #1e3a8a; font-size: 14px;">${s.name}</div>
+                    <div style="font-weight: 800; color: #2d4da3; font-size: 14px;">${s.name}</div>
                     <div style="font-weight: 600; color: #64748b; font-size: 11px;">${s.grade}</div>
                     ${s.contact || ''} </td>
                 <td style="text-align: center; color: #27ae60; font-weight: bold; border: 1px solid #d1e8d8;">${s.timeIn}</td>
