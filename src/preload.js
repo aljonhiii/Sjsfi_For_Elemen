@@ -37,6 +37,7 @@ getDepartments: () => ipcRenderer.invoke('get-departments'),
     editFaculty: (data) => ipcRenderer.invoke('edit-faculty', data),
     deleteFaculty: (id) => ipcRenderer.invoke('delete-faculty', id),
     restoreFaculty: (id) => ipcRenderer.invoke('restore-faculty', id),
+    exportFacultyCSV: () => ipcRenderer.invoke('export-faculty-csv'),
     importFacultyCSV: () => ipcRenderer.invoke('import-faculty-csv'),
 
 });

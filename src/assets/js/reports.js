@@ -106,11 +106,11 @@ async function loadLogs() {
 
     // Now it compares "2026-04-13" > "2026-04-13" (which safely passes!)
     if (end > todayLocal) { 
-        alert("End Date cannot be in the future!"); 
+        showCustomModal('error', 'Invalid Date', 'End Date cannot be in the future!'); 
         return; 
     }
     if (start > end) { 
-        alert("Start Date cannot be after End Date!"); 
+        showCustomModal('error', 'Invalid Date', 'Start Date cannot be after End Date!'); 
         return; 
     }
 
@@ -122,10 +122,10 @@ async function loadLogs() {
             allFetchedLogsData = response.data;
             filterLogsTable();
         } else {
-            alert("Database Error: " + response.error);
+            showCustomModal('error', 'Database Error', 'Database Error: ' + response.error);
         }
     } catch (error) {
-        alert("System Error. Check Console.");
+        showCustomModal('error', 'System Error', 'System Error. Check Console.');
     } finally {
         hideLoading();
     }
@@ -294,7 +294,7 @@ const start = document.getElementById('logStart').value;
     const selectedDept = deptFilter ? deptFilter.value : 'ALL';
 
     if (currentLogsData.length === 0) {
-        alert("Please load the data before exporting!"); 
+        showCustomModal('error', 'Export Error', 'Please load the data before exporting!'); 
         return;
     }
 
@@ -376,7 +376,7 @@ const start = document.getElementById('logStart').value;
 
         // If no records match the filter, stop here
         if (rowCount === 0) {
-            alert(`No records found for ${selectedDept} in this date range.`);
+            showCustomModal('error', 'No Records', `No records found for ${selectedDept} in this date range.`);
             return;
         }
 
@@ -521,7 +521,7 @@ const start = document.getElementById('logStart').value;
         // Include the department in the filename for better organization
         const fileName = `Library_Logs_${selectedDept}_${start}_to_${end}.pdf`;
         const result = await window.api.generatePDF(fileName, reportHTML); 
-        if (result.success) alert("Logs PDF Saved Successfully!");
+        if (result.success) showCustomModal('success', 'Success', 'Logs PDF Saved Successfully!');
 
     } finally {
         hideLoading();
@@ -541,8 +541,8 @@ async function loadSummary() {
     const day = String(now.getDate()).padStart(2, '0');
     const todayLocal = `${year}-${month}-${day}`;
 
-    if (end > todayLocal) { alert("End Date cannot be in the future!"); return; }
-    if (start > end) { alert("Start Date cannot be after End Date!"); return; }
+    if (end > todayLocal) { showCustomModal('error', 'Invalid Date', 'End Date cannot be in the future!'); return; }
+    if (start > end) { showCustomModal('error', 'Invalid Date', 'Start Date cannot be after End Date!'); return; }
 
     showLoading("Computing total hours...");
     try {
@@ -646,7 +646,7 @@ function renderSummaryTable() {
             const deptFilter = document.getElementById('deptFilterSummary')?.value || 'ALL';
 
             if (allFetchedSummaryData.length === 0) {
-                alert("Please click 'Compute' to load the data before exporting!"); return;
+                showCustomModal('error', 'Export Error', 'Please click \'Compute\' to load the data before exporting!'); return;
             }
 
             showLoading('Exporting Pdf for Summary');
@@ -669,7 +669,7 @@ function renderSummaryTable() {
                 });
 
                 if (rowCount === 0) {
-                    alert(`No records found for ${deptFilter} in this date range.`);
+                    showCustomModal('error', 'No Records', `No records found for ${deptFilter} in this date range.`);
                     return;
                 }
 
@@ -755,7 +755,7 @@ function renderSummaryTable() {
 
                 const fileName = `Library_Summary_${deptFilter}_${start}_to_${end}.pdf`;
                 const result = await window.api.generatePDF(fileName, reportHTML);
-                if (result.success) alert("Summary PDF Saved Successfully!");
+                if (result.success) showCustomModal('success', 'Success', 'Summary PDF Saved Successfully!');
             } finally {
                 hideLoading();
             }
@@ -831,7 +831,7 @@ function renderSummaryTable() {
             const yearInputObj = document.getElementById('newYearInput');
             const yearInput = yearInputObj.value.trim();
 
-            if (!yearInput) return alert("Please type a year format like 2026_2027");
+            if (!yearInput) return showCustomModal('error', 'Invalid Input', 'Please type a year format like 2026_2027');
 
             if (confirm(`CRITICAL: This will archive the current data as ${yearInput}. Continue?`)) {
                 const result = await window.api.archiveSchoolYear(yearInput);
@@ -840,13 +840,13 @@ function renderSummaryTable() {
                 try {
                     await sleep(2000);
                     if (result.success) {
-                        alert("Archive Successful!");
+                        showCustomModal('success', 'Success', 'Archive Successful!');
                         yearInputObj.value = '';
                         await loadArchiveUI(); 
                         document.getElementById('archiveSelect').value = 'current'; 
                         await handleYearChange(); 
                     } else {
-                        alert("Error: " + result.error);
+                        showCustomModal('error', 'Error', 'Error: ' + result.error);
                     }
                 } finally {
                     hideLoading();
@@ -868,3 +868,37 @@ function closeModal(modalId) {
 
 // Ensure your existing functions (loadLogs, executeArchive, handleYearChange, etc.) 
 // remain exactly as they are below this line!
+// ==========================================
+// 🎨 UI FUNCTIONS (CUSTOM MODAL CONTROLS)
+// ==========================================
+function showCustomModal(type, title, message) {
+    const modal = document.getElementById('customModal');
+    const modalIcon = document.getElementById('modalIcon');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalBtn = document.getElementById('modalBtn');
+    
+    if(!modal) {
+        alert(title + ": " + message);
+        return;
+    }
+    
+    modalTitle.innerText = title;
+    modalMessage.innerText = message;
+    
+    if (type === 'success') {
+        modalIcon.innerHTML = "<i class='bx bx-check-circle' style='color: var(--success-color); font-size: 50px;'></i>";
+        modalBtn.className = 'btn-confirm';
+        modalBtn.innerText = 'Continue';
+    } else if (type === 'error') {
+        modalIcon.innerHTML = "<i class='bx bx-x-circle' style='color: var(--danger-color); font-size: 50px;'></i>";
+        modalBtn.className = 'btn-danger';
+        modalBtn.innerText = 'Try Again';
+    } else {
+        modalIcon.innerHTML = "<i class='bx bx-info-circle' style='color: #3b82f6; font-size: 50px;'></i>";
+        modalBtn.className = 'btn-confirm';
+        modalBtn.innerText = 'OK';
+    }
+    
+    openModal('customModal');
+}

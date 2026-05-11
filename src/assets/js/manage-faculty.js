@@ -311,6 +311,19 @@ async function saveEdit() {
 }
 
 // ==========================================
+// 8. EXPORT CSV LOGIC
+// ==========================================
+async function handleExportCSV() {
+    try {
+        const result = await window.api.exportFacultyCSV();
+        if (result.success) alert("Export successful!");
+        else if (result.error !== 'Cancelled') alert("Export failed: " + result.error);
+    } catch (err) {
+        alert("System error during export.");
+    }
+}
+
+// ==========================================
 // 7. DELETE & RESTORE LOGIC
 // ==========================================
 async function deleteFaculty(id, name) {

@@ -922,6 +922,30 @@ ipcMain.handle('export-students-csv', async (event) => {
         return { success: false, error: friendlyMessage }; }
 });
 
+ipcMain.handle('export-faculty-csv', async (event) => {
+    try {
+        const db = dbManager.getReportDb(); 
+        const faculty = db.prepare(`SELECT faculty_code, full_name, department FROM faculty`).all();
+        let csvContent = "faculty_code,full_name,department\n";
+        faculty.forEach(f => csvContent += `"${f.faculty_code}","${f.full_name}","${f.department}"\n`);
+
+        const { filePath } = await dialog.showSaveDialog({
+            title: 'Export Faculty Roster', defaultPath: 'faculty_roster.csv',
+            filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+        });
+        if (filePath) { 
+            fs.writeFileSync(filePath, csvContent);   
+            writeAuditLog("EXPORT_CSV", `Exported faculty roster to: ${filePath}`); 
+            return { success: true }; 
+        }
+        return { success: false, error: 'Cancelled' };
+    } catch (error) { 
+        const friendlyMessage = getFriendlyError(error);
+        log.error(`User Alert: ${friendlyMessage} | Tech Details: ${error.message}`);
+        return { success: false, error: friendlyMessage }; 
+    }
+});
+
 ipcMain.handle('import-students-csv', async (event) => {
     if (dbManager.getIsArchiving()) return { success: false, error: "System is archiving. Please wait." };
     try {

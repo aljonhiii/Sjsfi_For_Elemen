@@ -231,6 +231,16 @@
         </div>
     </div>
 
+    <!-- Success/Error Alert Modal -->
+    <div id="customModal" class="custom-modal-overlay">
+        <div class="custom-modal" style="max-width: 400px; text-align: center; padding: 40px 30px;">
+            <div id="modalIcon" style="font-size: 50px; margin-bottom: 15px;"></div>
+            <h3 id="modalTitle" style="margin-bottom: 10px; font-size: 22px; font-weight: 800;">Success!</h3>
+            <p id="modalMessage" style="margin-bottom: 25px; color: var(--text-secondary); line-height: 1.5; font-size: 14px;">Record saved.</p>
+            <button id="modalBtn" onclick="closeModal('customModal')" class="btn-confirm" style="margin-top:0; width: 100%; justify-content: center;">Continue</button>
+        </div>
+    </div>
+
     <script src="assets/js/reports.js"></script>
 </body>
 </html>
