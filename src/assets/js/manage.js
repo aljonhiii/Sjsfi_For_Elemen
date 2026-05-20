@@ -1,49 +1,124 @@
-    let allStudents = [];
-    let filteredStudents = [];
-    let currentPage = 1;
-    const rowsPerPage = 10;
+// ==========================================
+// 1. GLOBAL STATE & HELPERS
+// ==========================================
+let allStudents = [];
+let filteredStudents = [];
+let currentPage = 1;
+const rowsPerPage = 10;
+let isArchiveView = false;
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    let isArchiveView = false;
-
-
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        // Turns on the loading screen and changes the text
 function showLoading(message = "Processing...") {
     const textElement = document.getElementById('loading-text');
     const loader = document.getElementById('loading-overlay');
-    
     if (textElement) textElement.innerText = message;
-    
     if (loader) {
-        loader.classList.remove('hidden'); // Clean up the CSS just in case
-        loader.style.display = 'flex';     // 🌟 FORCE IT TO APPEAR
+        loader.classList.remove('hidden'); 
+        loader.style.display = 'flex';     
     }
 }
 
-// Turns off the loading screen
 function hideLoading() {
     const loader = document.getElementById('loading-overlay');
     if (loader) {
-        // Force the browser to completely remove it from the clickable layout
         loader.style.display = 'none'; 
     }
 }
 
+// ==========================================
+// NEW: CUSTOM PROMISE MODAL (BRUTE-FORCE OVERRIDE)
+// ==========================================
+function showModal(type, title, message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customModal');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalBtn = document.getElementById('modalBtn');
+
+        let cancelBtn = document.getElementById('modalCancelBtn');
+        if (!cancelBtn) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.id = 'modalCancelBtn';
+            modalBtn.parentNode.insertBefore(cancelBtn, modalBtn);
+        }
+
+        // Reset manual styles
+        modalBtn.style.cssText = "margin-top:0; padding: 12px 24px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer;";
+        cancelBtn.style.cssText = "display: none; margin-top:0; padding: 12px 24px; border-radius: 10px; font-weight: 800; border: 2px solid #e2e8f0; background: transparent; color: #64748b; cursor: pointer;";
+
+        modalTitle.innerText = title;
+        modalMessage.innerText = message;
+
+        modalBtn.onclick = null;
+        cancelBtn.onclick = null;
+
+        if (type === 'success') {
+            modalIcon.innerHTML = "<i class='bx bx-check-circle' style='color: #10b981; font-size: 50px;'></i>";
+            modalBtn.style.backgroundColor = "#10b981"; // Force Green
+            modalBtn.style.color = "white";
+            modalBtn.innerText = 'Continue';
+            
+            modalBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(true);
+            };
+        } 
+        else if (type === 'error') {
+            modalIcon.innerHTML = "<i class='bx bx-x-circle' style='color: #ef4444; font-size: 50px;'></i>";
+            modalBtn.style.backgroundColor = "#ef4444"; // Force Red
+            modalBtn.style.color = "white";
+            modalBtn.innerText = 'Got it';
+            
+            modalBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(true);
+            };
+        } 
+        else if (type === 'confirm') {
+            modalIcon.innerHTML = "<i class='bx bx-error-circle' style='color: #f59e0b; font-size: 50px;'></i>";
+            
+            modalBtn.style.backgroundColor = "#10b981"; // Force Green
+            modalBtn.style.color = "white";
+            modalBtn.innerText = 'Yes, Proceed';
+            
+            cancelBtn.innerText = 'Cancel';
+            cancelBtn.style.display = 'inline-block'; 
+            
+            modalBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(true); 
+            };
+            cancelBtn.onclick = () => {
+                modal.style.display = 'none';
+                resolve(false); 
+            };
+        }
+        
+        modal.style.display = 'flex'; 
+    });
+}
+
+function closeModal() {
+    const modal = document.getElementById('customModal');
+    if(modal) modal.style.display = 'none';
+}
+
+// ==========================================
+// ARCHIVE TOGGLE & INITIALIZATION
+// ==========================================
 async function toggleArchiveView() {
     isArchiveView = !isArchiveView;
     const btn = document.getElementById('toggleArchiveBtn');
-    const headerTitle = document.querySelector('.header h1'); // Adjust selector to match your title
+    const headerTitle = document.querySelector('.header h1'); 
 
-    // 🌟 THIS IS THE MAGIC LINE: Toggles the global red theme in CSS!
     document.body.classList.toggle('recycle-mode');
 
     if (isArchiveView) {
-        // --- MODE: RECYCLE BIN ---
         btn.innerHTML = `<i class='bx bx-undo'></i> Back to Roster`;
         btn.classList.add('btn-archive-active'); 
         
-        // Fix: Use innerHTML and backticks. No need for style="color: red;" because CSS handles it!
         if (headerTitle) {
             headerTitle.innerHTML = `<i class='bx bx-trash'></i> Deleted Students Interface`;
         }
@@ -51,139 +126,201 @@ async function toggleArchiveView() {
         const response = await window.api.getDeletedStudents();
         if (response.success) {
             allStudents = response.data;
-            currentPage = 1; // Reset to page 1
-            applyFilters(); // This will render the table using the new data
+            currentPage = 1;
+            applyFilters();
         }
     } else {
-        // --- MODE: ACTIVE ROSTER ---
         btn.innerHTML = `<i class='bx bx-recycle'></i> View Recycle Bin`;
         btn.classList.remove('btn-archive-active');
         
         if (headerTitle) {
             headerTitle.innerHTML = `Student Roster`;
         }
-
-        loadStudents(); // Your original function that calls get-students (status = 1)
+        loadStudents(); 
     }
 }
 
-
-
-    // Put this at the very bottom of your script section
 window.api.onDatabaseSwitched((fileName) => {
     console.log("Database changed to: " + fileName);
-    
-    // 🚀 This is the critical part: Reload the data from the new source
     loadStudents(); 
     
-    // Optional: Change the Title so you know you are looking at an archive
     const title = document.querySelector('.header h1');
     if (fileName === 'current') {
         title.innerText = "Student Roster";
         title.style.color = "var(--primary-dark)";
     } else {
         title.innerText = `Roster Archive: ${fileName}`;
-        title.style.color = "#e67e22"; // Orange to warn it's an archive
+        title.style.color = "#e67e22"; 
     }
 });
 
-    async function loadStudents() {
-        const response = await window.api.getStudents();
-        if(!response.success) { alert("Failed to load database."); return; }
-        allStudents = response.data;
-        applyFilters(); 
+async function loadStudents() {
+    const response = await window.api.getStudents();
+    if(!response.success) { 
+        showModal('error', 'Database Error', "Failed to load database."); 
+        return; 
     }
+    allStudents = response.data;
+    applyFilters(); 
+}
 
+// ==========================================
+// RENDERING & FILTERING
+// ==========================================
 function renderTable() {
-        const tbody = document.getElementById('studentTable');
-        tbody.innerHTML = '';
-        
-        // Adjust the colspan if you added columns, usually 5 with the Actions column
-        if (filteredStudents.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 50px;">No students found.</td></tr>`;
-            document.getElementById('pageInfo').innerText = "Showing 0 records";
-            return;
-        }
-
-        const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
-        const startIndex = (currentPage - 1) * rowsPerPage;
-        const paginatedData = filteredStudents.slice(startIndex, startIndex + rowsPerPage);
-
-        paginatedData.forEach(s => {
-            let avatarHTML = '';
-            if (s.profile_pic) {
-                let safeUrl = encodeURI("file:///" + s.profile_pic.replace(/\\/g, '/'));
-                avatarHTML = `<img src="${safeUrl}">`;
-            } else {
-                const initials = s.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                avatarHTML = `<span>${initials}</span>`;
-            }
-            
-            // 🌟 LOGIC: Switch between Registration Date and Deletion Date
-            const displayDate = isArchiveView 
-                ? (s.deletedAt ? s.deletedAt : 'N/A') 
-                : (s.addedAt ? s.addedAt : 'Legacy Record');
-            
-            const dateIcon = isArchiveView ? 'bx-calendar-x' : 'bx-time';
-            const dateLabel = isArchiveView ? 'Deleted:' : 'Registered:';
-
-            tbody.innerHTML += `<tr>
-                <td><div class="student-info"><div class="avatar">${avatarHTML}</div><strong>${s.full_name}</strong></div></td>
-                <td style="font-family: monospace; font-weight: 600;">${s.student_code}</td>
-                <td>${s.grade_level}</td>
-
-                <td>
-                    <div style="display: flex; flex-direction: column;">
-                        <small style="font-size: 10px; color: var(--text-secondary); margin-left: 5px;">${dateLabel}</small>
-                        <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg-body); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border-color);">
-                            <i class='bx ${dateIcon}'></i> ${displayDate}
-                        </span>
-                    </div>
-                </td>
-
-                <td style="text-align: right;">
-                    ${isArchiveView ? `
-                        <button class="action-btn" style="color: var(--success-color); border-color: var(--success-color);" 
-                                onclick="handleRestore(${s.id}, '${s.full_name}')" title="Restore Student">
-                            <i class='bx bx-undo'></i> Restore
-                        </button>
-                    ` : `
-                        <button class="action-btn" onclick="editStudent(${s.id})" title="Edit"><i class='bx bx-edit-alt'></i></button>
-                        <button class="action-btn" style="color: var(--danger-color);" 
-                                onclick="deleteStudent(${s.id}, '${s.full_name}')" title="Delete"><i class='bx bx-trash'></i></button>
-                    `}
-                </td>
-            </tr>`;
-        });
-        
-        document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages} (${filteredStudents.length} total records)`;
-        document.getElementById('prevBtn').disabled = currentPage === 1;
-        document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
+    const tbody = document.getElementById('studentTable');
+    tbody.innerHTML = '';
+    
+    if (filteredStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 50px;">No students found.</td></tr>`;
+        document.getElementById('pageInfo').innerText = "Showing 0 records";
+        return;
     }
 
-async function editStudent(id) { // 🌟 Added 'async'
+    const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedData = filteredStudents.slice(startIndex, startIndex + rowsPerPage);
+
+    paginatedData.forEach(s => {
+        let avatarHTML = '';
+        if (s.profile_pic) {
+            let safeUrl = encodeURI("file:///" + s.profile_pic.replace(/\\/g, '/'));
+            avatarHTML = `<img src="${safeUrl}">`;
+        } else {
+            const initials = s.full_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            avatarHTML = `<span>${initials}</span>`;
+        }
+        
+        const displayDate = isArchiveView 
+            ? (s.deletedAt ? s.deletedAt : 'N/A') 
+            : (s.addedAt ? s.addedAt : 'Legacy Record');
+        
+        const dateIcon = isArchiveView ? 'bx-calendar-x' : 'bx-time';
+        const dateLabel = isArchiveView ? 'Deleted:' : 'Registered:';
+
+        tbody.innerHTML += `<tr>
+            <td><div class="student-info"><div class="avatar">${avatarHTML}</div><strong>${s.full_name}</strong></div></td>
+            <td style="font-family: monospace; font-weight: 600;">${s.student_code}</td>
+            <td><span style="background:#e0e7ff; color:#3730a3; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">${s.grade_level}</span></td>
+            <td>
+                <div style="display: flex; flex-direction: column;">
+                    <small style="font-size: 10px; color: var(--text-secondary); margin-left: 5px;">${dateLabel}</small>
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--bg-body); padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <i class='bx ${dateIcon}'></i> ${displayDate}
+                    </span>
+                </div>
+            </td>
+            <td style="text-align: right;">
+                ${isArchiveView ? `
+                    <button class="action-btn" style="color: var(--success-color); border-color: var(--success-color);" 
+                            onclick="handleRestore(${s.id}, '${s.full_name}')" title="Restore Student">
+                        <i class='bx bx-undo'></i> Restore
+                    </button>
+                ` : `
+                    <button class="action-btn" onclick="editStudent(${s.id})" title="Edit"><i class='bx bx-edit-alt'></i></button>
+                    <button class="action-btn" style="color: var(--danger-color);" 
+                            onclick="deleteStudent(${s.id}, '${s.full_name}')" title="Delete"><i class='bx bx-trash'></i></button>
+                `}
+            </td>
+        </tr>`;
+    });
+    
+    document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages} (${filteredStudents.length} total records)`;
+    document.getElementById('prevBtn').disabled = currentPage === 1;
+    document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
+}
+
+function changePage(dir) { 
+    currentPage += dir; 
+    renderTable();
+}
+
+function applyFilters() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const gradeFilter = document.getElementById('gradeFilter').value;
+
+    filteredStudents = allStudents.filter(student => {
+        const matchesSearch = 
+            (student.full_name || "").toLowerCase().includes(searchInput) || 
+            (student.student_code || "").toLowerCase().includes(searchInput);
+
+        const matchesGrade = (gradeFilter === 'all' || student.grade_level === gradeFilter);
+
+        return matchesSearch && matchesGrade;
+    });
+
+    currentPage = 1;
+    renderTable();
+}
+
+// ==========================================
+// DYNAMIC GRADES & EDIT LOGIC
+// ==========================================
+async function loadDynamicGrades() {
+    const dropdown = document.getElementById('gradeFilter');
+    if (!dropdown) return;
+
+    try {
+        const response = await window.api.getGradeLevels(); 
+        if (response.success) {
+            dropdown.innerHTML = `
+                <option value="all">All Levels</option>
+                <option value="1">Grade 1</option>
+                <option value="2">Grade 2</option>
+                <option value="3">Grade 3</option>
+                <option value="4">Grade 4</option>
+                <option value="5">Grade 5</option>
+                <option value="6">Grade 6</option>
+                <option value="7">Grade 7</option>
+                <option value="8">Grade 8</option>
+                <option value="9">Grade 9</option>
+                <option value="10">Grade 10</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+            `;
+            response.data.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.level_name; 
+                opt.innerText = item.level_name;
+                dropdown.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.error("Failed to load grade categories:", err);
+    }
+}
+
+function closeEditModal() { 
+    document.getElementById('editModal').style.display = 'none'; 
+}
+
+async function editStudent(id) { 
     const student = allStudents.find(s => s.id === id);
     if (!student) return;
 
     document.getElementById('editId').value = student.id;
     document.getElementById('editRfid').value = student.student_code;
 
-    // --- 🚀 START DYNAMIC PART ---
     const res = await window.api.getGradeLevels();
     const editDropdown = document.getElementById('editGrade');
     
     if (res.success && editDropdown) {
-        // Clear old options (like the hardcoded ones)
-        editDropdown.innerHTML = ''; 
-        
-        // Add a placeholder
-        const placeholder = document.createElement('option');
-        placeholder.value = "";
-        placeholder.disabled = true;
-        placeholder.innerText = "Select Level";
-        editDropdown.appendChild(placeholder);
+        editDropdown.innerHTML = `
+            <option value="" disabled>Select Level</option>
+            <option value="1">Grade 1</option>
+            <option value="2">Grade 2</option>
+            <option value="3">Grade 3</option>
+            <option value="4">Grade 4</option>
+            <option value="5">Grade 5</option>
+            <option value="6">Grade 6</option>
+            <option value="7">Grade 7</option>
+            <option value="8">Grade 8</option>
+            <option value="9">Grade 9</option>
+            <option value="10">Grade 10</option>
+            <option value="11">Grade 11</option>
+            <option value="12">Grade 12</option>
+        `;
 
-        // Fill with your dynamic strands from the DB
         res.data.forEach(level => {
             const opt = document.createElement('option');
             opt.value = level.level_name;
@@ -191,16 +328,13 @@ async function editStudent(id) { // 🌟 Added 'async'
             editDropdown.appendChild(opt);
         });
     }
-    // --- 🏁 END DYNAMIC PART ---
 
     const nameInput = document.getElementById('editName');
     nameInput.value = student.full_name;
     nameInput.removeAttribute('readonly');  
     nameInput.removeAttribute('disabled');  
     
-    // 🌟 Set the selected value AFTER the options have been created above
     editDropdown.value = student.grade_level;
-
     document.getElementById('editPhotoInput').value = '';
     
     const preview = document.getElementById('editImagePreview');
@@ -216,27 +350,23 @@ async function editStudent(id) { // 🌟 Added 'async'
     }
     
     document.getElementById('editModal').style.display = 'flex';
-
-    setTimeout(() => {
-        nameInput.focus();
-    }, 50);
+    setTimeout(() => nameInput.focus(), 50);
 }
 
-    // Your photo listener stays exactly the same!
-    document.getElementById('editPhotoInput').addEventListener('change', function() {
-        const img = document.getElementById('editImagePreview');
-        const placeholder = document.getElementById('editPlaceholder');
-        if (this.files && this.files[0]) {
-            img.src = URL.createObjectURL(this.files[0]);
-            img.style.display = 'block';
-            placeholder.style.display = 'none';
-        }
-    });
+document.getElementById('editPhotoInput').addEventListener('change', function() {
+    const img = document.getElementById('editImagePreview');
+    const placeholder = document.getElementById('editPlaceholder');
+    if (this.files && this.files[0]) {
+        img.src = URL.createObjectURL(this.files[0]);
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+    }
+});
 
 async function saveEdit() {
-        const photoInput = document.getElementById('editPhotoInput');
-const data = {
-        id: parseInt(document.getElementById('editId').value), // 🌟 FIXED: Wrapped in parseInt()
+    const photoInput = document.getElementById('editPhotoInput');
+    const data = {
+        id: parseInt(document.getElementById('editId').value), 
         student_id: document.getElementById('editRfid').value.trim(), 
         full_name: document.getElementById('editName').value.trim(),
         grade_level: document.getElementById('editGrade').value,
@@ -245,175 +375,109 @@ const data = {
         profile_pic_ext: null
     };
 
-    // Basic validation to make sure they didn't leave it blank
     if (!data.student_id || !data.full_name) {
-        alert("Please fill in both the ID/Code and the Full Name.");
+        showModal('error', 'Missing Information', "Please fill in both the ID/Code and the Full Name.");
         return;
     }
 
-        showLoading('Processing....');
+    showLoading('Processing....');
+    
+    try {
+        await sleep(400);
         
+        if (photoInput.files && photoInput.files[0]) {
+            const file = photoInput.files[0];
+            data.profile_pic_ext = file.name.split('.').pop();
+            data.profile_pic_data = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        const result = await window.api.editStudent(data);
+        
+        if (result.success) { 
+            closeEditModal(); 
+            await showModal('success', 'Student Updated', 'Student successfully updated!'); 
+            window.location.reload(); 
+        } else {
+            showModal('error', 'Action Blocked', result.error);
+        }
+    } catch (err) {
+        showModal('error', 'System Error', 'A system error occurred while saving.');
+    } finally {
+        hideLoading();
+    }
+}
+
+// ==========================================
+// EXPORT, DELETE & RESTORE LOGIC
+// ==========================================
+async function handleExportCSV() {
+    showLoading('Processing...');
+    try {
+        const result = await window.api.exportStudentsCSV();
+        if (result.success) {
+            showModal('success', 'Export Successful', "The CSV file has been saved.");
+        } else if (result.error !== 'Cancelled') {
+            showModal('error', 'Export Failed', result.error);
+        }
+    } catch (err) {
+        showModal('error', 'System Error', "System error during export.");
+    } finally {
+        hideLoading();
+    }
+}
+
+async function deleteStudent(id, name) {
+    const isConfirmed = await showModal('confirm', 'Soft Delete Student?', `Move ${name} to the recycle bin?`);
+    
+    if (isConfirmed) {
+        showLoading('Processing....')
         try {
             await sleep(400);
-            
-            // 1. IF THERE IS A PHOTO: Tell JavaScript to WAIT for it to finish reading
-            if (photoInput.files && photoInput.files[0]) {
-                const file = photoInput.files[0];
-                data.profile_pic_ext = file.name.split('.').pop();
-                
-                // This forces the code to pause until the photo is 100% loaded
-                data.profile_pic_data = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-            }
-
-            // 2. NOW CALL MAIN.JS (We only have to write this once now!)
-            const result = await window.api.editStudent(data);
-            
-            // 3. CHECK THE RESULT FOR THE ARCHIVE BLOCKER
-            if (result.success) { 
-                closeEditModal(); 
-                
-                setTimeout(() => { 
-                    alert('Student successfully updated!'); 
-                    window.location.reload(); // ☢️ Instantly resets the entire page
-                }, 100);
-            } else {
-                // 🛑 THIS CATCHES THE ARCHIVE ERROR
-                alert('Action Blocked: ' + result.error);
-            }
-            
-        } catch (err) {
-            alert('A system error occurred while saving.');
-        } finally {
-            // 4. The loader will now safely turn off at the very end
-            hideLoading();
-        }
-    }
-
-    async function deleteStudent(id, name) {
-        
-        if (confirm(`Soft Delete ${name}? (You can restore it in the Recycle bin)`)) {
-            showLoading('Processing....')
-            try{
-                await sleep(400);
             const result = await window.api.deleteStudent(id);
-            if (result.success){
-                alert('Student sucessfuly soft-deleted');
+            if (result.success) {
+                await showModal('success', 'Deleted', 'Student successfully soft-deleted');
                 loadStudents();
             } else {
-                alert('Action was Blocked: ' + result.error);
-                
+                showModal('error', 'Action Blocked', result.error);
             }    
-        } finally{
+        } finally {
             hideLoading();
         }
     }
-    }
-
-
+}
 
 async function handleRestore(id, name) {
-    if (confirm(`Are you sure you want to restore ${name} to the active roster?`)) {
-        
-        // 1. Turn on the loader immediately!
+    const isConfirmed = await showModal('confirm', 'Restore Student?', `Restore ${name} to the active roster?`);
+    
+    if (isConfirmed) {
         showLoading('Processing....');
-        
         try {
-            // Optional: Keep your tiny delay for visual smoothness
             await sleep(400); 
-            
-            // 2. Ask the database to do the work WHILE the loader is spinning
             const result = await window.api.restoreStudent(id);
 
-            // 3. Check the result
             if (result.success) {
-                alert('Student Successfully Restored!');
+                await showModal('success', 'Restored', 'Student Successfully Restored!');
                 const response = await window.api.getDeletedStudents();
                 allStudents = response.data;
                 applyFilters();
                 window.location.reload();
             } else {
-                alert('Action Blocked: ' + result.error);
+                showModal('error', 'Action Blocked', result.error);
             }
-            
         } catch (err) {
-            // Catch any unexpected crashes
-            alert('A system error occurred while restoring.');
+            showModal('error', 'System Error', 'A system error occurred while restoring.');
         } finally {
-            // 4. Always turn off the loader no matter what happens
             hideLoading();
         }
-    }
-}
-
-    async function handleExportCSV() {
-        showLoading('Processing...');
-        try{
-        const result = await window.api.exportStudentsCSV();
-        if (result.success) alert("Export successful!");
-        }finally{
-            hideLoading();
-        }
-    }
-
-    function closeEditModal() { document.getElementById('editModal').style.display = 'none'; 
-
-    }
-    function changePage(dir) { currentPage += dir; renderTable();
-
-     }
-
-function applyFilters() {
-    const searchInput = document.getElementById('searchInput').value.toLowerCase();
-    const gradeFilter = document.getElementById('gradeFilter').value;
-
-    filteredStudents = allStudents.filter(student => {
-        // Matches Name or Code
-        const matchesSearch = 
-            (student.full_name || "").toLowerCase().includes(searchInput) || 
-            (student.student_code || "").toLowerCase().includes(searchInput);
-
-        // Matches Grade (Exact match because the dropdown was built from the data)
-        const matchesGrade = (gradeFilter === 'all' || student.grade_level === gradeFilter);
-
-        return matchesSearch && matchesGrade;
-    });
-
-    currentPage = 1;
-    renderTable();
-}
-
-
-// Function to fetch and show ONLY the grades the admin added
-async function loadDynamicGrades() {
-    const dropdown = document.getElementById('gradeFilter');
-    if (!dropdown) return;
-
-    try {
-        const response = await window.api.getGradeLevels(); // Call the new backend handler
-        
-        if (response.success) {
-            // Keep "All Levels", then clear the rest
-            dropdown.innerHTML = '<option value="all">All Levels</option>';
-
-            response.data.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.level_name; // This matches what's in the students table
-                opt.innerText = item.level_name;
-                dropdown.appendChild(opt);
-            });
-        }
-    } catch (err) {
-        console.error("Failed to load grade categories:", err);
     }
 }
 
 // Ensure this runs when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     loadDynamicGrades();
-    // ... your other init functions like loadRoster()
-});
-    document.addEventListener('DOMContentLoaded', loadStudents);
+    loadStudents();
+}); 

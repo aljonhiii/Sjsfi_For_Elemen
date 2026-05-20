@@ -407,6 +407,41 @@ ipcMain.handle('delete-master-badge', async (event, badgeCode) => {
     }
 });
 
+// --- ADMIN: ADD NEW ADMIN RFID ---
+ipcMain.handle('add-admin-rfid', async (event, rfidCode, name) => {
+    try {
+        const db = dbManager.getReportDb();
+        db.prepare(`INSERT INTO admin_rfids (rfid_code, name) VALUES (?, ?)`).run(rfidCode, name);
+        writeAuditLog("ADD_ADMIN_RFID", `Registered new admin RFID: ${rfidCode} for ${name}`);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: "Admin RFID might already exist." };
+    }
+});
+
+// --- ADMIN: GET ALL ADMIN RFIDS ---
+ipcMain.handle('get-admin-rfids', async () => {
+    try {
+        const db = dbManager.getReportDb();
+        const rfids = db.prepare(`SELECT * FROM admin_rfids ORDER BY date_added DESC`).all();
+        return { success: true, data: rfids };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+// --- ADMIN: DELETE ADMIN RFID ---
+ipcMain.handle('delete-admin-rfid', async (event, rfidCode) => {
+    try {
+        const db = dbManager.getReportDb();
+        db.prepare(`DELETE FROM admin_rfids WHERE rfid_code = ?`).run(rfidCode);
+        writeAuditLog("DELETE_ADMIN_RFID", `Deleted the admin RFID: ${rfidCode}`);
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
 // ==========================================
 // GROUP VISITOR REGISTRATION LOGIC
 // ==========================================
@@ -417,17 +452,9 @@ ipcMain.handle('process-visitors', async (event, badgeCode, visitorsArray) => {
     try {
         const db = dbManager.getLiveDb(); 
         
-        // 🌟 DATABASE FAILSAFE: Automatically add the columns if they are missing
-        try { db.exec("ALTER TABLE visitor_logs ADD COLUMN mobile TEXT;"); } catch (e) {}
-        try { db.exec("ALTER TABLE visitor_logs ADD COLUMN email TEXT;"); } catch (e) {}
-        
-        // If your Reports page pulls from a master 'logs' table, add them there too:
-        try { db.exec("ALTER TABLE logs ADD COLUMN mobile TEXT;"); } catch (e) {}
-        try { db.exec("ALTER TABLE logs ADD COLUMN email TEXT;"); } catch (e) {}
-
-        // 🌟 UPDATED: Insert badge, name, mobile, and email
+        // 🌟 UPDATED: Insert badge, name, mobile, and address
         const insertVisitor = db.prepare(`
-            INSERT INTO visitor_logs (badge_code, visitor_name, mobile, email, log_type) 
+            INSERT INTO visitor_logs (badge_code, visitor_name, mobile, address, log_type) 
             VALUES (?, ?, ?, ?, 'TIME IN')
         `);
 
@@ -435,7 +462,7 @@ ipcMain.handle('process-visitors', async (event, badgeCode, visitorsArray) => {
         let insertMasterLog;
         try {
             insertMasterLog = db.prepare(`
-                INSERT INTO logs (student_code, full_name, grade_level, user_type, mobile, email, log_type)
+                INSERT INTO logs (student_code, full_name, grade_level, user_type, mobile, address, log_type)
                 VALUES (?, ?, 'Guest', 'VISITOR', ?, ?, 'TIME IN')
             `);
         } catch(e) {
@@ -449,14 +476,14 @@ ipcMain.handle('process-visitors', async (event, badgeCode, visitorsArray) => {
                 if (visitor && visitor.name && visitor.name.trim() !== "") {
                     const vName = visitor.name.trim();
                     const vMobile = visitor.mobile ? visitor.mobile.trim() : '';
-                    const vEmail = visitor.email ? visitor.email.trim() : '';
+                    const vAddress = visitor.address ? visitor.address.trim() : '';
 
                     // 1. Save to visitor_logs
-                    insertVisitor.run(badgeCode, vName, vMobile, vEmail); 
+                    insertVisitor.run(badgeCode, vName, vMobile, vAddress); 
 
                     // 2. Save to master logs (if it exists) so reports.js can print it
                     if (insertMasterLog) {
-                        insertMasterLog.run(badgeCode, vName, vMobile, vEmail);
+                        insertMasterLog.run(badgeCode, vName, vMobile, vAddress);
                     }
                 }
             }
@@ -781,7 +808,7 @@ ipcMain.handle('get-logs-range', async (event, start, end) => {
                 student_logs.log_type, 
                 datetime(student_logs.timestamp, 'localtime') as timestamp,
                 NULL AS mobile,
-                NULL AS email
+                NULL AS address
             FROM student_logs 
             JOIN students ON student_logs.student_id = students.id 
             WHERE DATE(student_logs.timestamp, 'localtime') BETWEEN ? AND ? 
@@ -797,7 +824,7 @@ ipcMain.handle('get-logs-range', async (event, start, end) => {
                 faculty_logs.log_type, 
                 datetime(faculty_logs.timestamp, 'localtime') as timestamp,
                 NULL AS mobile,
-                NULL AS email
+                NULL AS address
             FROM faculty_logs 
             JOIN faculty ON faculty_logs.faculty_id = faculty.id 
             WHERE DATE(faculty_logs.timestamp, 'localtime') BETWEEN ? AND ? 
@@ -813,7 +840,7 @@ ipcMain.handle('get-logs-range', async (event, start, end) => {
                 visitor_logs.log_type, 
                 datetime(visitor_logs.timestamp, 'localtime') as timestamp,
                 visitor_logs.mobile,
-                visitor_logs.email 
+                visitor_logs.address 
             FROM visitor_logs 
             WHERE DATE(visitor_logs.timestamp, 'localtime') BETWEEN ? AND ? 
 
@@ -1256,8 +1283,3 @@ ipcMain.handle('import-faculty-csv', async (event) => {
         return { success: false, error: getFriendlyError(error) }; 
     }
 });
-
-
-
-
-

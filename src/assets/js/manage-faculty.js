@@ -25,15 +25,93 @@ function hideLoading() {
 }
 
 // ==========================================
+// NEW: CUSTOM PROMISE MODAL
+// ==========================================
+function showModal(type, title, message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customModal');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalBtn = document.getElementById('modalBtn');
+
+        // Dynamically create a sleek Cancel button
+        let cancelBtn = document.getElementById('modalCancelBtn');
+        if (!cancelBtn) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.id = 'modalCancelBtn';
+            modalBtn.parentNode.insertBefore(cancelBtn, modalBtn);
+        }
+
+        // Reset manual styles so they don't mix
+        modalBtn.style.cssText = "margin-top:0; padding: 12px 24px; border-radius: 10px; font-weight: 800; border: none; cursor: pointer;";
+        cancelBtn.style.cssText = "display: none; margin-top:0; padding: 12px 24px; border-radius: 10px; font-weight: 800; border: 2px solid #e2e8f0; background: transparent; color: #64748b; cursor: pointer;";
+
+        modalTitle.innerText = title;
+        modalMessage.innerText = message;
+
+        modalBtn.onclick = null;
+        cancelBtn.onclick = null;
+
+        if (type === 'success') {
+            modalIcon.innerHTML = "<i class='bx bx-check-circle' style='color: #10b981; font-size: 50px;'></i>";
+            modalBtn.style.backgroundColor = "#10b981"; // Force Green
+            modalBtn.style.color = "white";
+            modalBtn.innerText = 'Continue';
+            
+            modalBtn.onclick = () => {
+                modal.style.display = 'none'; // Force Hide
+                resolve(true);
+            };
+        } 
+        else if (type === 'error') {
+            modalIcon.innerHTML = "<i class='bx bx-x-circle' style='color: #ef4444; font-size: 50px;'></i>";
+            modalBtn.style.backgroundColor = "#ef4444"; // Force Red
+            modalBtn.style.color = "white";
+            modalBtn.innerText = 'Got it';
+            
+            modalBtn.onclick = () => {
+                modal.style.display = 'none'; // Force Hide
+                resolve(true);
+            };
+        } 
+        else if (type === 'confirm') {
+            modalIcon.innerHTML = "<i class='bx bx-error-circle' style='color: #f59e0b; font-size: 50px;'></i>";
+            
+            modalBtn.style.backgroundColor = "#10b981"; // Force Green
+            modalBtn.style.color = "white";
+            modalBtn.innerText = 'Yes, Proceed';
+            
+            cancelBtn.innerText = 'Cancel';
+            cancelBtn.style.display = 'inline-block'; // Force Show Cancel
+            
+            modalBtn.onclick = () => {
+                modal.style.display = 'none'; // Force Hide
+                resolve(true); 
+            };
+            cancelBtn.onclick = () => {
+                modal.style.display = 'none'; // Force Hide
+                resolve(false); 
+            };
+        }
+        
+        // 🚀 THE MAGIC LINE: Physically forces the modal onto the screen!
+        modal.style.display = 'flex'; 
+    });
+}
+function closeModal() {
+    const modal = document.getElementById('customModal');
+    if(modal) modal.style.display = 'none';
+}
+
+// ==========================================
 // 2. INITIALIZATION
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load departments first, then the faculty table
     await loadDynamicDepartments();
     await loadFaculty();
 });
 
-// React to Admin changing the active Archive Year
 window.api.onDatabaseSwitched((fileName) => {
     console.log("Database changed to: " + fileName);
     loadFaculty(); 
@@ -74,11 +152,11 @@ async function loadDynamicDepartments() {
 async function loadFaculty() {
     showLoading(isArchiveView ? "Loading Recycle Bin..." : "Loading Roster...");
     try {
-        // Pass 'isArchiveView' to fetch active (false) or deleted (true) faculty
         const response = await window.api.getFaculty(isArchiveView);
 
         if (!response.success) { 
-            alert("Failed to load database: " + response.error); 
+            // Replaced Alert
+            showModal('error', 'Database Error', "Failed to load database: " + response.error); 
             return; 
         }
         
@@ -106,7 +184,7 @@ function applyFilters() {
         return matchesSearch && matchesDept;
     });
 
-    currentPage = 1; // Reset pagination
+    currentPage = 1; 
     renderTable();
 }
 
@@ -212,7 +290,6 @@ async function editFaculty(id) {
     document.getElementById('editId').value = faculty.id;
     document.getElementById('editFacultyCode').value = faculty.faculty_code;
 
-    // Load dynamic dropdown for departments
     const res = await window.api.getDepartments();
     const editDropdown = document.getElementById('editDept');
     
@@ -273,7 +350,8 @@ async function saveEdit() {
     };
 
     if (!data.faculty_code || !data.full_name) {
-        alert("Please fill in both the ID/Code and the Full Name.");
+        // Replaced Alert
+        showModal('error', 'Missing Information', "Please fill in both the ID/Code and the Full Name.");
         return;
     }
 
@@ -296,15 +374,16 @@ async function saveEdit() {
         
         if (result.success) { 
             closeEditModal(); 
-            setTimeout(() => { 
-                alert('Faculty profile successfully updated!'); 
-                window.location.reload(); 
-            }, 100);
+            // Replaced Alert & utilized Promise resolution for page reload
+            await showModal('success', 'Profile Updated', 'Faculty profile successfully updated!'); 
+            window.location.reload(); 
         } else {
-            alert('Action Blocked: ' + result.error);
+            // Replaced Alert
+            showModal('error', 'Action Blocked', result.error);
         }
     } catch (err) {
-        alert('A system error occurred while saving.');
+        // Replaced Alert
+        showModal('error', 'System Error', 'A system error occurred while saving.');
     } finally {
         hideLoading();
     }
@@ -316,10 +395,15 @@ async function saveEdit() {
 async function handleExportCSV() {
     try {
         const result = await window.api.exportFacultyCSV();
-        if (result.success) alert("Export successful!");
-        else if (result.error !== 'Cancelled') alert("Export failed: " + result.error);
+        if (result.success) {
+            // Replaced Alert
+            showModal('success', 'Export Successful', "The CSV file has been saved.");
+        } else if (result.error !== 'Cancelled') {
+            // Replaced Alert
+            showModal('error', 'Export Failed', result.error);
+        }
     } catch (err) {
-        alert("System error during export.");
+        showModal('error', 'System Error', "System error during export.");
     }
 }
 
@@ -327,16 +411,20 @@ async function handleExportCSV() {
 // 7. DELETE & RESTORE LOGIC
 // ==========================================
 async function deleteFaculty(id, name) {
-    if (confirm(`Soft Delete ${name}? (You can restore them in the Recycle bin)`)) {
+    // Replaced confirm() with Promise Modal
+    const isConfirmed = await showModal('confirm', 'Soft Delete Faculty?', `Move ${name} to the recycle bin? (You can restore them later)`);
+    
+    if (isConfirmed) {
         showLoading('Processing...');
         try {
             await sleep(400);
             const result = await window.api.deleteFaculty(id);
             if (result.success) {
-                alert('Faculty successfully soft-deleted');
+                // Replaced Alert
+                await showModal('success', 'Deleted', 'Faculty successfully soft-deleted');
                 loadFaculty();
             } else {
-                alert('Action was Blocked: ' + result.error);
+                showModal('error', 'Action Blocked', result.error);
             }    
         } finally {
             hideLoading();
@@ -345,22 +433,124 @@ async function deleteFaculty(id, name) {
 }
 
 async function handleRestore(id, name) {
-    if (confirm(`Are you sure you want to restore ${name} to the active roster?`)) {
+    // Replaced confirm() with Promise Modal
+    const isConfirmed = await showModal('confirm', 'Restore Faculty?', `Are you sure you want to restore ${name} to the active roster?`);
+    
+    if (isConfirmed) {
         showLoading('Processing...');
         try {
             await sleep(400); 
             const result = await window.api.restoreFaculty(id);
 
             if (result.success) {
-                alert('Faculty Successfully Restored!');
+                // Replaced Alert
+                await showModal('success', 'Restored', 'Faculty Successfully Restored!');
                 await loadFaculty();
             } else {
-                alert('Action Blocked: ' + result.error);
+                showModal('error', 'Action Blocked', result.error);
             }
         } catch (err) {
-            alert('A system error occurred while restoring.');
+            showModal('error', 'System Error', 'A system error occurred while restoring.');
         } finally {
             hideLoading();
+        }
+    }
+}
+
+// ==========================================
+// 8. ADMIN RFID ACCESS KEYS
+// ==========================================
+
+function openAdminRfidModal() {
+    document.getElementById('adminRfidModal').style.display = 'flex';
+    loadAdminRfids();
+}
+
+function closeAdminRfidModal() {
+    document.getElementById('adminRfidModal').style.display = 'none';
+    document.getElementById('newAdminName').value = '';
+    document.getElementById('newAdminRfid').value = '';
+    document.getElementById('adminRfidStatus').innerHTML = '';
+}
+
+async function loadAdminRfids() {
+    const container = document.getElementById('adminRfidList');
+    container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 13px;">Loading...</div>';
+    
+    try {
+        const res = await window.api.getAdminRfids();
+        if (res.success && res.data.length > 0) {
+            container.innerHTML = res.data.map(admin => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #e2e8f0;">
+                    <div>
+                        <div style="font-weight: bold; color: #1e293b;">${admin.name}</div>
+                        <div style="font-size: 12px; font-family: monospace; color: #64748b;">${admin.rfid_code}</div>
+                    </div>
+                    <button type="button" class="delete-admin-btn" data-code="${admin.rfid_code}" style="background: transparent; color: #e74c3c; border: none; cursor: pointer; font-size: 18px;">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.delete-admin-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const code = e.currentTarget.getAttribute('data-code');
+                    removeAdminRfid(code);
+                });
+            });
+        } else {
+            container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 13px;">No Admin Access Keys registered.</div>`;
+        }
+    } catch (err) {
+        container.innerHTML = `<div style="color: red; padding: 10px;">Error loading admin keys.</div>`;
+    }
+}
+
+async function saveAdminRfid() {
+    const nameInput = document.getElementById('newAdminName').value.trim();
+    const rfidInput = document.getElementById('newAdminRfid').value.trim();
+    const statusBox = document.getElementById('adminRfidStatus');
+    
+    if (!nameInput || !rfidInput) {
+        statusBox.innerHTML = "<span style='color: #e74c3c;'>Both Name and RFID are required.</span>";
+        return;
+    }
+    
+    statusBox.innerHTML = "<span style='color: #3b82f6;'><i class='bx bx-loader-alt bx-spin'></i> Saving...</span>";
+    
+    try {
+        const res = await window.api.addAdminRfid(rfidInput, nameInput);
+        if (res.success) {
+            statusBox.innerHTML = "<span style='color: #10b981;'>Successfully added!</span>";
+            document.getElementById('newAdminName').value = '';
+            document.getElementById('newAdminRfid').value = '';
+            loadAdminRfids();
+            setTimeout(() => { statusBox.innerHTML = ''; }, 2000);
+        } else {
+            statusBox.innerHTML = `<span style='color: #e74c3c;'>Error: ${res.error}</span>`;
+        }
+    } catch (err) {
+        statusBox.innerHTML = `<span style='color: #e74c3c;'>System error occurred.</span>`;
+    }
+}
+
+async function removeAdminRfid(code) {
+    // Replaced confirm() with Promise Modal
+    const isConfirmed = await showModal('confirm', 'Delete Admin Key?', `Are you sure you want to delete this admin key (${code})?`);
+    
+    if (isConfirmed) {
+        try {
+            const res = await window.api.deleteAdminRfid(code);
+            if (res.success) {
+                loadAdminRfids();
+                showModal('success', 'Deleted', 'Admin key successfully removed.');
+            } else {
+                showModal('error', 'Action Failed', `Error deleting admin key: ${res.error}`);
+            }
+        } catch (err) {
+            showModal('error', 'System Error', 'System error occurred while deleting.');
         }
     }
 }

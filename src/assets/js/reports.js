@@ -192,10 +192,10 @@ function renderLogsTable() {
 
         // 🌟 RENDER CONTACT INFO FOR UI
         let contactInfo = '';
-        if (isVisitor && (log.mobile || log.email)) {
+        if (isVisitor && (log.mobile || log.address)) {
             const phone = log.mobile ? `<span style="margin-right: 12px;"><i class='bx bx-phone' style="font-size: 12px;"></i> ${log.mobile}</span>` : '';
-            const email = log.email ? `<span><i class='bx bx-envelope' style="font-size: 12px;"></i> ${log.email}</span>` : '';
-            contactInfo = `<div style="font-size: 11px; color: #64748b; margin-top: 4px; font-weight: normal; display: flex; align-items: center; gap: 4px;">${phone}${email}</div>`;
+            const address = log.address ? `<span><i class='bx bx-map' style="font-size: 12px;"></i> ${log.address}</span>` : '';
+            contactInfo = `<div style="font-size: 11px; color: #64748b; margin-top: 4px; font-weight: normal; display: flex; align-items: center; gap: 4px;">${phone}${address}</div>`;
         }
 
         tbody.innerHTML += `<tr>
@@ -325,10 +325,10 @@ const start = document.getElementById('logStart').value;
 
             // 🌟 FORMAT CONTACT INFO FOR PDF
             let contactHTML = '';
-            if (isVisitor && (log.mobile || log.email)) {
+            if (isVisitor && (log.mobile || log.address)) {
                 const phoneStr = log.mobile ? `<b>Mob:</b> ${log.mobile} &nbsp;&nbsp;` : '';
-                const emailStr = log.email ? `<b>Email:</b> ${log.email}` : '';
-                contactHTML = `<div style="font-size: 10px; color: #475569; margin-top: 4px; font-weight: normal;">${phoneStr}${emailStr}</div>`;
+                const addressStr = log.address ? `<b>Address:</b> ${log.address}` : '';
+                contactHTML = `<div style="font-size: 10px; color: #475569; margin-top: 4px; font-weight: normal;">${phoneStr}${addressStr}</div>`;
             }
 
             if (log.log_type.includes('IN')) {

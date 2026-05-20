@@ -17,7 +17,9 @@ function hideLoading() {
 // 2. CSV IMPORT LOGIC
 // ==========================================
 async function handleImportCSV() {
-    if (confirm("Ready to import? The system will ignore duplicates and process your CSV file.")) {
+    const isConfirmed = await showModal('confirm', 'Ready to Import?', 'The system will ignore duplicates and process your CSV file.');
+    
+    if (isConfirmed) {
         showLoading('Importing Faculty Data...');
         try {
             const result = await window.api.importFacultyCSV();
@@ -68,14 +70,41 @@ const codeError = document.getElementById('codeError');
 const nameError = document.getElementById('nameError');
 
 if (codeInput) {
-    codeInput.addEventListener('input', function() {
-        this.value = this.value.replace(/\D/g, ''); // Numbers only
-        if (this.value.length > 0 && this.value.length !== 10) {
-            this.classList.add('invalid');
-            if(codeError) codeError.innerText = "RFID code must be exactly 10 digits.";
-        } else {
-            this.classList.remove('invalid');
-            if(codeError) codeError.innerText = "";
+    let scanBuffer = '';
+    let lastKeyTime = Date.now();
+
+    codeInput.addEventListener('keydown', function(event) {
+        const currentTime = Date.now();
+        
+        // Reset buffer if typing is too slow (human typing)
+        if (currentTime - lastKeyTime > 50) {
+            scanBuffer = ''; 
+        }
+        
+        lastKeyTime = currentTime;
+
+        // If the Enter key is pressed inside this input field
+        if (event.key === 'Enter') {
+            event.preventDefault(); // STOP the form from submitting!
+
+            // Validate that we received a full 10-digit code
+            if (this.value.length === 10) {
+                // Focus on the next input field automatically (Full Name)
+                // This makes it easy for the librarian to just start typing the name
+                document.getElementById('fullName').focus();
+            } else {
+                // If it wasn't 10 digits, show the error
+                this.classList.add('invalid');
+                if(codeError) codeError.innerText = "RFID code must be exactly 10 digits.";
+            }
+            
+            scanBuffer = '';
+            return;
+        }
+
+        // Add character to buffer if it's a number
+        if (event.key.length === 1 && !isNaN(event.key)) {
+            scanBuffer += event.key;
         }
     });
 }
@@ -98,27 +127,74 @@ if (nameInput) {
 // 5. CUSTOM MODAL LOGIC
 // ==========================================
 function showModal(type, title, message) {
-    const modal = document.getElementById('customModal');
-    const modalIcon = document.getElementById('modalIcon');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalMessage = document.getElementById('modalMessage');
-    const modalBtn = document.getElementById('modalBtn');
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customModal');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalBtn = document.getElementById('modalBtn');
 
-    if(!modal) return alert(`${title}: ${message}`);
+        // Dynamically create a Cancel button if it doesn't exist yet
+        let cancelBtn = document.getElementById('modalCancelBtn');
+        if (!cancelBtn) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.id = 'modalCancelBtn';
+            cancelBtn.className = 'btn-import'; // Uses your existing gray outline style
+            cancelBtn.style.cssText = "margin-bottom:10px; padding: 18px 45%;";
+            modalBtn.parentNode.insertBefore(cancelBtn, modalBtn);
+        }
 
-    modalTitle.innerText = title;
-    modalMessage.innerText = message;
+        modalTitle.innerText = title;
+        modalMessage.innerText = message;
 
-    if (type === 'success') {
-        modalIcon.innerHTML = "<i class='bx bx-check-circle' style='color: var(--success-color);'></i>";
-        modalIcon.className = "success-indicator"; // For JS tracking
-        modalBtn.innerText = 'Continue';
-    } else {
-        modalIcon.innerHTML = "<i class='bx bx-x-circle' style='color: var(--danger-color);'></i>";
-        modalIcon.className = "error-indicator";
-        modalBtn.innerText = 'Try Again';
-    }
-    modal.classList.add('active');
+        // Clear any old click events
+        modalBtn.onclick = null;
+        cancelBtn.onclick = null;
+
+        if (type === 'success') {
+            modalIcon.innerHTML = "<i class='bx bx-check-circle' style='color: var(--success-color);'></i>";
+            modalBtn.innerText = 'Continue';
+            cancelBtn.style.display = 'none'; // Hide cancel button
+            
+            modalBtn.onclick = () => {
+                modal.classList.remove('active');
+                window.location.href = "manage-faculty.html";
+                resolve(true);
+            };
+        } 
+        else if (type === 'error') {
+            modalIcon.innerHTML = "<i class='bx bx-x-circle' style='color: var(--danger-color);'></i>";
+            modalBtn.innerText = 'Try Again';
+            cancelBtn.style.display = 'none'; // Hide cancel button
+            
+            modalBtn.onclick = () => {
+                modal.classList.remove('active');
+                // Fix Input Lock
+                const rfidInput = document.getElementById('facultyCode');
+                if (rfidInput) { rfidInput.value = ''; rfidInput.focus(); }
+                resolve(true);
+            };
+        } 
+        else if (type === 'confirm') {
+            modalIcon.innerHTML = "<i class='bx bx-error-circle' style='color: #f59e0b;'></i>"; // Warning Orange Icon
+            modalBtn.innerText = 'Yes, Proceed';
+            cancelBtn.innerText = 'Cancel';
+            cancelBtn.style.display = 'inline-block'; // Show cancel button!
+            
+            // If they click Yes
+            modalBtn.onclick = () => {
+                modal.classList.remove('active');
+                resolve(true); 
+            };
+            // If they click Cancel
+            cancelBtn.onclick = () => {
+                modal.classList.remove('active');
+                resolve(false); 
+            };
+        }
+        
+        modal.classList.add('active');
+    });
 }
 
 function closeModal() {
@@ -271,18 +347,31 @@ async function addNewDepartment(event) {
         if (res.success) {
             input.value = ''; 
             refreshDeptData();
+            // Show a nice success modal instead of just silently clearing the box!
+            showModal('success', 'Department Added', `The department "${name}" has been successfully created.`);
         } else {
-            alert(res.error);
+            // Replaced alert() with your custom error modal
+            showModal('error', 'Invalid Department', res.error);
         }
     } catch (err) {
-        alert("Error adding department");
+        // Replaced alert() with your custom error modal
+        showModal('error', 'System Error', "An error occurred while adding the department.");
     }
 }
 
 async function removeDepartment(id) {
-    if (confirm("Remove this department? Members already assigned to it will keep their records but the category will be gone.")) {
-        await window.api.deleteDepartment(id);
-        refreshDeptData();
+    // Look at how clean this is! It waits for the custom modal just like the old confirm()
+    const isConfirmed = await showModal('confirm', 'Delete Department?', 'Members assigned to this department will keep their records, but the category will be gone. Are you sure?');
+    
+    if (isConfirmed) {
+        try {
+            await window.api.deleteDepartment(id);
+            refreshDeptData();
+            // Optional: Tell them it worked!
+            // showModal('success', 'Deleted', 'Department removed successfully.');
+        } catch (err) {
+            showModal('error', 'System Error', "Could not delete the department.");
+        }
     }
 }
 

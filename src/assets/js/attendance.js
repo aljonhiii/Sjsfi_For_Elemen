@@ -1,13 +1,26 @@
 const timeInSound = new Audio('assets/spelling-bee.mp3');
         const timeOutSound = new Audio('assets/times-up.mp3');
         const errorSound = new Audio('assets/perfect-fart.mp3');
-        
-        const librarian_admin_rfid_access =  [
-            "0002045004",
-            "0002102614",
-            "0002075610",
-            "0002075591"
-        ];
+
+
+
+        // Fetch dynamic admins periodically or once on load
+        async function fetchAdminRfids() {
+            try {
+                const res = await window.api.getAdminRfids();
+                if (res.success) {
+                    const dynamicRfids = res.data.map(admin => admin.rfid_code);
+                    librarian_admin_rfid_access = ['0006665666', '0006236136', '0006231136', '0006226136', '0006236136', '0006246136', ...dynamicRfids];
+                }
+            } catch (e) {
+                console.error("Error fetching admin RFIDs:", e);
+            }
+        }
+
+        // Initial fetch
+        fetchAdminRfids();
+        // Refresh every minute to ensure we have the latest
+        setInterval(fetchAdminRfids, 60000);
 
         // Live Clock logic
         function updateClock() {

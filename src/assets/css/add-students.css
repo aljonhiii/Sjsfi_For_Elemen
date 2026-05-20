@@ -566,6 +566,65 @@ body {
     background: #dc2626 !important;
 }
 
+
+
+
+#deptModal,
+#gradeModal,
+#masterBadgeModal,
+#visitorModal {
+    z-index: 5000;
+}
+
+#customModal {
+    z-index: 9999 !important; /* Always on top */
+}
+
+/* ========================================= */
+/* 🛠️ EQUAL SIZE MODAL BUTTONS (CANCEL/YES)  */
+/* ========================================= */
+
+/* 1. Setup the Cancel Button */
+#modalCancelBtn {
+    width: calc(50% - 6px) !important; 
+    margin: 10px 12px 0 0 !important; /* 12px gap between the buttons */
+    padding: 14px 24px !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 15px !important;
+    box-sizing: border-box !important;
+    display: inline-block;
+    vertical-align: top;
+}
+
+/* 2. Setup the Main Button (Default 100% width for Success/Errors) */
+#modalBtn {
+    width: 100% !important;
+    margin: 10px 0 0 0 !important;
+    padding: 14px 24px !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 15px !important;
+    box-sizing: border-box !important;
+    display: inline-block;
+    vertical-align: top;
+}
+
+/* 3. The Magic Trick: When Cancel is shown, shrink Main Button to 50% so they match! */
+#modalCancelBtn[style*="display: inline-block"] ~ #modalBtn {
+    width: calc(50% - 6px) !important;
+}
+
+/* Ensure the modal icon error button color applies correctly */
+.modal-icon.error ~ #modalBtn {
+    background: var(--danger-color) !important;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2) !important;
+}
+
+.modal-icon.error ~ #modalBtn:hover {
+    background: #dc2626;
+}
+
 @keyframes spin { 
     0% { transform: rotate(0deg); } 
     100% { transform: rotate(360deg); } 

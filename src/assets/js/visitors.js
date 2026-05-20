@@ -109,8 +109,8 @@ function renderVisitorForms() {
                             <input type="tel" id="v_mobile_${i}" required placeholder="09xxxxxxxxx" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')" autocomplete="off" style="width: 100%; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1);">
                         </div>
                         <div class="input-group" style="flex: 1;">
-                            <label style="font-size: 12px; font-weight: bold; color: var(--text-secondary, #475569); margin-bottom: 4px; display: block;">Email (Optional)</label>
-                            <input type="email" id="v_email_${i}" placeholder="email@example.com" autocomplete="off" style="width: 100%; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1);">
+                            <label style="font-size: 12px; font-weight: bold; color: var(--text-secondary, #475569); margin-bottom: 4px; display: block;">Address (Optional)</label>
+                            <input type="text" id="v_address_${i}" placeholder="" autocomplete="off" style="width: 100%; padding: 8px; box-sizing: border-box; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1);">
                         </div>
                     </div>
                     
@@ -143,11 +143,11 @@ async function submitVisitors() {
     for (let i = 1; i <= count; i++) {
         const nameEl = document.getElementById(`v_name_${i}`);
         const mobileEl = document.getElementById(`v_mobile_${i}`);
-        const emailEl = document.getElementById(`v_email_${i}`);
+        const addressEl = document.getElementById(`v_address_${i}`);
         
         const val = nameEl.value.trim();
         const mobileVal = mobileEl ? mobileEl.value.trim() : '';
-        const emailVal = emailEl ? emailEl.value.trim() : '';
+        const addressVal = addressEl ? addressEl.value.trim() : '';
 
         // 1. Check if Name is missing
         if(!val) { 
@@ -170,7 +170,7 @@ async function submitVisitors() {
         allVisitors.push({ 
             name: val, 
             mobile: mobileVal, 
-            email: emailVal 
+            address: addressVal 
         });
     }
 
