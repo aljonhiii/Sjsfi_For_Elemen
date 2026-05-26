@@ -4,20 +4,43 @@
         let currentPage = 1;
         const rowsPerPage = 10; 
         
+        let activeCustomFilters = [];
+        let currentFilterContext = 'logs';
+
         // This will hold the encoded image data so PDF never loses the picture!
         let base64Logo = ""; 
-
-
-
-
 
         let allFetchedLogsData = []; // Master copy of fetched logs
 
         const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-
         let allFetchedSummaryData = []; // Master copy of computed time summaries   
-        
+
+        function handleFilterChange(type) {
+            const select = document.getElementById(type === 'logs' ? 'deptFilterLogs' : 'deptFilterSummary');
+            if (select.value === 'CUSTOM') {
+                currentFilterContext = type;
+                openModal('customFilterModal');
+            } else {
+                if (type === 'logs') filterLogsTable();
+                else filterSummaryTable();
+            }
+        }
+
+        function applyCustomFilter() {
+            activeCustomFilters = Array.from(document.querySelectorAll('.custom-cb:checked')).map(cb => cb.value);
+            closeModal('customFilterModal');
+            
+            if (activeCustomFilters.length === 0) {
+                // If nothing checked, revert to ALL
+                const select = document.getElementById(currentFilterContext === 'logs' ? 'deptFilterLogs' : 'deptFilterSummary');
+                select.value = 'ALL';
+            }
+
+            if (currentFilterContext === 'logs') filterLogsTable();
+            else filterSummaryTable();
+        }
+
         // Turns on the loading screen and changes the text
         function showLoading(message = "Processing...") {
             document.getElementById('loading-text').innerText = message;
@@ -146,6 +169,12 @@ function filterLogsTable() {
         let matchesDept = false;
         if (deptFilter === 'ALL') {
             matchesDept = true;
+        } else if (deptFilter === 'CUSTOM') {
+            // Check if log matches ANY of the activeCustomFilters
+            matchesDept = activeCustomFilters.some(f => {
+                if (f === 'VISITOR') return log.user_type === 'VISITOR';
+                return log.user_type !== 'VISITOR' && isGradeInDept(log.grade_level, f);
+            });
         } else if (deptFilter === 'VISITOR') {
             // Only show if the user_type is VISITOR
             matchesDept = (log.user_type === 'VISITOR');
@@ -240,6 +269,11 @@ function isGradeInDept(gradeValue, dept) {
     // Fallback logic for grouping students by number
     const num = parseInt(gradeStr.replace(/\D/g, ''), 10); // Extracts the number
 
+    if (dept === 'All Students') {
+        return (num >= 1 && num <= 12) || 
+               ['STEM', 'ABM', 'HUMSS', 'GAS', 'TVL'].some(strand => gradeStr.includes(strand));
+    }
+
     if (dept === 'Elementary') {
         return num >= 1 && num <= 6;
     }
@@ -263,23 +297,74 @@ function isGradeInDept(gradeValue, dept) {
 async function loadDepartmentFilters() {
     try {
         // We ask the backend for the live list of departments
-        const response = await window.api.getDepartments();
+        const deptResponse = await window.api.getDepartments();
+        const gradeResponse = await window.api.getGradeLevels();
         
-        if (response.success) {
-            // We want to update BOTH dropdowns (one for Logs, one for Summary)
-            const logsDropdown = document.getElementById('deptFilterLogs');
-            const summaryDropdown = document.getElementById('deptFilterSummary');
-            
+        const logsDeptGroup = document.getElementById('dynamicDeptLogs');
+        const summaryDeptGroup = document.getElementById('dynamicDeptSummary');
+        
+        const logsGradeGroup = document.getElementById('dynamicGradeLogs');
+        const summaryGradeGroup = document.getElementById('dynamicGradeSummary');
+        
+        const customFilterCheckboxes = document.getElementById('customFilterCheckboxes');
+        if (customFilterCheckboxes) {
+            customFilterCheckboxes.innerHTML = `
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" class="custom-cb" value="Elementary"> Elementary (1-6)
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" class="custom-cb" value="Junior High"> Junior High (7-10)
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" class="custom-cb" value="Senior High"> Senior High (11-12 & Strands)
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" class="custom-cb" value="VISITOR"> Visitor Only
+                </label>
+                <hr style="border: 0; border-top: 1px solid var(--border-color); width: 100%; margin: 5px 0;">
+                <div id="dynamicCustomFilters" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            `;
+        }
+
+        if (deptResponse.success) {
             // Loop through the database results and add them as <option> tags
-            response.data.forEach(dept => {
+            deptResponse.data.forEach(dept => {
                 const optionHTML = `<option value="${dept.dept_name}">${dept.dept_name}</option>`;
                 
-                if (logsDropdown) logsDropdown.innerHTML += optionHTML;
-                if (summaryDropdown) summaryDropdown.innerHTML += optionHTML;
+                if (logsDeptGroup) logsDeptGroup.innerHTML += optionHTML;
+                if (summaryDeptGroup) summaryDeptGroup.innerHTML += optionHTML;
+                
+                const dynamicCustomFilters = document.getElementById('dynamicCustomFilters');
+                if (dynamicCustomFilters) {
+                    dynamicCustomFilters.innerHTML += `
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" class="custom-cb" value="${dept.dept_name}"> ${dept.dept_name}
+                        </label>
+                    `;
+                }
+            });
+        }
+        
+        if (gradeResponse && gradeResponse.success) {
+            // Loop through the grade levels and add them as <option> tags
+            gradeResponse.data.forEach(grade => {
+                const optionHTML = `<option value="${grade.level_name}">${grade.level_name}</option>`;
+                
+                if (logsGradeGroup) logsGradeGroup.innerHTML += optionHTML;
+                if (summaryGradeGroup) summaryGradeGroup.innerHTML += optionHTML;
+                
+                const dynamicCustomFilters = document.getElementById('dynamicCustomFilters');
+                if (dynamicCustomFilters) {
+                    dynamicCustomFilters.innerHTML += `
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" class="custom-cb" value="${grade.level_name}"> ${grade.level_name}
+                        </label>
+                    `;
+                }
             });
         }
     } catch (error) {
-        console.error("Failed to load departments into dropdowns:", error);
+        console.error("Failed to load departments/grades into dropdowns:", error);
     }
 }
 
@@ -313,6 +398,12 @@ const start = document.getElementById('logStart').value;
             const currentFilter = selectedDept;
             const isVisitor = String(log.user_type).toUpperCase() === 'VISITOR';
             if (currentFilter === 'ALL') return true;
+            if (currentFilter === 'CUSTOM') {
+                return activeCustomFilters.some(f => {
+                    if (f === 'VISITOR') return isVisitor;
+                    return !isVisitor && isGradeInDept(log.grade_level, f);
+                });
+            }
             if (currentFilter === 'VISITOR') return isVisitor;
             return !isVisitor && isGradeInDept(log.grade_level, currentFilter);
         }).forEach(log => {
@@ -382,9 +473,15 @@ const start = document.getElementById('logStart').value;
 
         const imageTag = base64Logo ? `<img src="${base64Logo}" width="80" height="80" style="margin-bottom: 10px; object-fit: contain;">` : '';
         // 🌟 THE FIX: Decide the column title based on what department is selected
-        const infoHeader = selectedDept === 'VISITOR' 
+        let infoHeader = selectedDept === 'VISITOR' 
             ? 'Visitor Information' 
             : (selectedDept === 'ALL' ? 'Student & Visitor Information' : 'Student Information');   
+            
+        let displayDept = selectedDept;
+        if (selectedDept === 'CUSTOM') {
+            displayDept = activeCustomFilters.join(', ') || 'Custom Selection';
+            infoHeader = 'Student & Visitor Information';
+        }
             
         const reportHTML = `
             <html>
@@ -483,7 +580,7 @@ const start = document.getElementById('logStart').value;
 
                 <div class="report-title">
                     <h2>Attendance Logs Report</h2>
-                    <p>Dept: <b>${selectedDept}</b> | Period: <b>${start}</b> to <b>${end}</b></p>
+                    <p>Dept: <b>${displayDept}</b> | Period: <b>${start}</b> to <b>${end}</b></p>
                 </div>
 
                 <table>
@@ -519,7 +616,8 @@ const start = document.getElementById('logStart').value;
         `;
 
         // Include the department in the filename for better organization
-        const fileName = `Library_Logs_${selectedDept}_${start}_to_${end}.pdf`;
+        const fileDeptName = selectedDept === 'CUSTOM' ? 'Custom_Selection' : selectedDept;
+        const fileName = `Library_Logs_${fileDeptName}_${start}_to_${end}.pdf`;
         const result = await window.api.generatePDF(fileName, reportHTML); 
         if (result.success) showCustomModal('success', 'Success', 'Logs PDF Saved Successfully!');
 
@@ -556,7 +654,7 @@ async function loadSummary() {
             sortedData.forEach(log => {
                 if (log.user_type === 'VISITOR') return; 
                 const sCode = log.student_code; 
-                if(!summary[sCode]) summary[sCode] = { name: log.full_name, grade: log.grade_level, total: 0, lastIn: null };
+                if(!summary[sCode]) summary[sCode] = { name: log.full_name, grade: log.grade_level, total: 0, lastIn: null, user_type: log.user_type };
                 
                 if(log.log_type === 'TIME IN') {
                     summary[sCode].lastIn = new Date(log.timestamp);
@@ -575,7 +673,7 @@ async function loadSummary() {
                     const mins = Math.floor((s.total % 3600000) / 60000);
                     let timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
                     
-                    allFetchedSummaryData.push({ name: s.name, grade: s.grade, time: timeString });
+                    allFetchedSummaryData.push({ name: s.name, grade: s.grade, time: timeString, user_type: s.user_type });
                 }
             });
             
@@ -654,12 +752,21 @@ function renderSummaryTable() {
                 await sleep(1000);
                 let fullTableRows = "";
                 let rowCount = 0;
+                let hasStudent = false;
+                let hasFaculty = false;
 
                 // 🌟 FIX: Option 2 Logic - Ignore the search bar, filter by Dropdown only!
                 allFetchedSummaryData.filter(student => {
                     if (deptFilter === 'ALL') return true;
+                    if (deptFilter === 'CUSTOM') {
+                        return activeCustomFilters.some(f => isGradeInDept(student.grade, f));
+                    }
                     return isGradeInDept(student.grade, deptFilter);
                 }).forEach(row => {
+                    const uType = String(row.user_type).toUpperCase();
+                    if (uType === 'FACULTY') hasFaculty = true;
+                    else hasStudent = true;
+
                     fullTableRows += `<tr>
                         <td><b>${row.name}</b></td>
                         <td>${row.grade}</td>
@@ -673,7 +780,26 @@ function renderSummaryTable() {
                     return;
                 }
 
+                let nameHeader = 'Name';
+                let deptHeader = 'Grade/Department';
+
+                if (hasStudent && !hasFaculty) {
+                    nameHeader = 'Student Name';
+                    deptHeader = 'Grade Level';
+                } else if (!hasStudent && hasFaculty) {
+                    nameHeader = 'Faculty Name';
+                    deptHeader = 'Department';
+                } else {
+                    nameHeader = 'Student/Faculty Name';
+                    deptHeader = 'Grade/Dept';
+                }
+
                 const imageTag = base64Logo ? `<img src="${base64Logo}" width="80" height="80" style="margin-bottom: 10px; object-fit: contain;">` : '';
+                
+                let displayDept = deptFilter;
+                if (deptFilter === 'CUSTOM') {
+                    displayDept = activeCustomFilters.join(', ') || 'Custom Selection';
+                }
 
                 const reportHTML = `
                     <html>
@@ -723,12 +849,12 @@ function renderSummaryTable() {
 
                         <div class="report-title">
                             <h2>Time Summary Report</h2>
-                            <p>Dept: <b>${deptFilter}</b> | Period: <b>${start}</b> to <b>${end}</b></p>
+                            <p>Dept: <b>${displayDept}</b> | Period: <b>${start}</b> to <b>${end}</b></p>
                         </div>
 
                         <table>
                             <thead>
-                                <tr><th>Student Name</th><th>Grade Level</th><th>Total Library Time</th></tr>
+                                <tr><th>${nameHeader}</th><th>${deptHeader}</th><th>Total Library Time</th></tr>
                             </thead>
                             <tbody>
                                 ${fullTableRows}
@@ -753,7 +879,8 @@ function renderSummaryTable() {
                     </html>
                 `;
 
-                const fileName = `Library_Summary_${deptFilter}_${start}_to_${end}.pdf`;
+                const fileDeptName = deptFilter === 'CUSTOM' ? 'Custom_Selection' : deptFilter;
+                const fileName = `Library_Summary_${fileDeptName}_${start}_to_${end}.pdf`;
                 const result = await window.api.generatePDF(fileName, reportHTML);
                 if (result.success) showCustomModal('success', 'Success', 'Summary PDF Saved Successfully!');
             } finally {

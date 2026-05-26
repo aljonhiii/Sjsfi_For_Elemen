@@ -113,13 +113,19 @@
                 </div>
                 
                 <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
-                    <select id="deptFilterLogs" class="dept-select" onchange="filterLogsTable()" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                    <option value="ALL">All Departments</option>
-    <option value="Elementary">Elementary (1-6)</option>
-    <option value="Junior High">Junior High (7-10)</option>
-    <option value="Senior High">Senior High (11-12 & Strands)</option>
-    <option value="VISITOR">Visitor Only</option>
-                </select>
+                    <select id="deptFilterLogs" class="dept-select" onchange="handleFilterChange('logs')" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <option value="ALL">All Departments</option>
+                        <option value="CUSTOM">Custom Multi-Select...</option>
+                        <optgroup label="Main Categories">
+                            <option value="All Students">All Students (Elem, Junior, Senior)</option>
+                            <option value="Elementary">Elementary (1-6)</option>
+                            <option value="Junior High">Junior High (7-10)</option>
+                            <option value="Senior High">Senior High (11-12 & Strands)</option>
+                            <option value="VISITOR">Visitor Only</option>
+                        </optgroup>
+                        <optgroup id="dynamicDeptLogs" label="Faculty Departments"></optgroup>
+                        <optgroup id="dynamicGradeLogs" label="Student Grade Levels"></optgroup>
+                    </select>
 
                     <button class="btn-pdf" onclick="exportLogsPDF()">
                         <i class='bx bxs-file-pdf'></i> Export PDF
@@ -165,12 +171,18 @@
                 </div>
                 
                 <div style="display: flex; gap: 10px; align-items: center; margin-left: auto;">
-                    <select id="deptFilterSummary" class="modern-select" onchange="filterSummaryTable()" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                <option value="ALL">All Departments</option>
-    <option value="Elementary">Elementary (1-6)</option>
-    <option value="Junior High">Junior High (7-10)</option>
-    <option value="Senior High">Senior High (11-12 & Strands)</option>
-                </select>
+                    <select id="deptFilterSummary" class="modern-select" onchange="handleFilterChange('summary')" style="padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <option value="ALL">All Departments</option>
+                        <option value="CUSTOM">Custom Multi-Select...</option>
+                        <optgroup label="Main Categories">
+                            <option value="All Students">All Students (Elem, Junior, Senior)</option>
+                            <option value="Elementary">Elementary (1-6)</option>
+                            <option value="Junior High">Junior High (7-10)</option>
+                            <option value="Senior High">Senior High (11-12 & Strands)</option>
+                        </optgroup>
+                        <optgroup id="dynamicDeptSummary" label="Faculty Departments"></optgroup>
+                        <optgroup id="dynamicGradeSummary" label="Student Grade Levels"></optgroup>
+                    </select>
 
                     <button class="btn-pdf" onclick="exportSummaryPDF()">
                         <i class='bx bxs-file-pdf'></i> Export PDF
@@ -238,6 +250,26 @@
             <h3 id="modalTitle" style="margin-bottom: 10px; font-size: 22px; font-weight: 800;">Success!</h3>
             <p id="modalMessage" style="margin-bottom: 25px; color: var(--text-secondary); line-height: 1.5; font-size: 14px;">Record saved.</p>
             <button id="modalBtn" onclick="closeModal('customModal')" class="btn-confirm" style="margin-top:0; width: 100%; justify-content: center;">Continue</button>
+        </div>
+    </div>
+
+    <!-- Custom Multi-Select Modal -->
+    <div id="customFilterModal" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div class="modal-header">
+                <h3><i class='bx bx-filter-alt'></i> Merge Departments</h3>
+                <button class="close-btn" onclick="closeModal('customFilterModal')"><i class='bx bx-x'></i></button>
+            </div>
+            <div class="modal-body" style="max-height: 400px; overflow-y: auto; text-align: left;">
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 15px;">Select multiple grades or departments to combine them into one report.</p>
+                <div id="customFilterCheckboxes" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal('customFilterModal')">Cancel</button>
+                <button class="btn-confirm" onclick="applyCustomFilter()">Apply Filter</button>
+            </div>
         </div>
     </div>
 
