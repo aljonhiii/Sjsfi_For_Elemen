@@ -52,10 +52,36 @@
             gap: 20px;
         }
 
+        .logo-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 125px; 
+            height: 80px;
+            margin-right: 15px;
+        }
+
         .school-logo {
             width: 80px;
             height: 80px;
             object-fit: contain;
+            border-radius: 50%; 
+            background: white; 
+        }
+        
+        .sjsfi-logo {
+            position: absolute;
+            left: 0;
+            z-index: 0.6;
+            border: 3px solid white; 
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.12); 
+        }
+
+        .wmsu-logo {
+            position: absolute;
+            left: 60px; 
+            z-index: 1;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); 
         }
 
         .school-info-text {
@@ -396,3 +422,101 @@
         @media (min-width: 2600px) { .main-content { zoom: 1.55; } } /* 🌟 NEW STEP */
         @media (min-width: 2800px) { .main-content { zoom: 1.65; } }
         @media (min-width: 3500px) { .main-content { zoom: 2.0; } }
+
+
+        
+/* ========================================================= */
+        /* 👨‍💻 DEVELOPER CREDIT BOX (CLEAN GLASSMORPHISM FORMAT)      */
+        /* ========================================================= */
+        
+        .developer-credit-box {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            /* 🌟 Glassmorphism: Semi-transparent white with a blur effect */
+            background: rgba(243, 250, 239, 0.85); 
+            backdrop-filter: blur(8px); 
+            -webkit-backdrop-filter: blur(8px);
+            
+            padding: 12px 16px; 
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.08);
+            border: 1px solid rgba(39, 174, 96, 0.15); /* Very faint green border */
+            
+            z-index: 100;
+            max-width: 270px;
+            pointer-events: none; 
+            display: flex;
+            flex-direction: column;
+            gap: 8px; /* Balanced spacing */
+        }
+
+        .dev-header {
+            font-size: 8px;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: 1px;
+            color: #5c7a65; /* Muted theme color */
+            text-transform: uppercase;
+        }
+
+        .dev-pills {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px; 
+        }
+
+        /* 🌟 Clean Pills: No borders, slightly rounded rectangles */
+        .dev-pill {
+            background: rgba(39, 174, 96, 0.1); /* Very faint green fill */
+            color: #1e8449; /* Crisp, readable dark green */
+            padding: 3px 7px; 
+            border-radius: 6px; /* Squarer look is cleaner for tiny text */
+            font-size: 8px; 
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .dev-divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(39, 174, 96, 0.2), transparent);
+            border: none;
+            margin: 2px 0;
+        }
+
+        .dev-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .wmsu-credit-logo {
+            width: 28px;  
+            height: 28px;
+            object-fit: contain;
+            opacity: 0.9; /* Softens the bright red logo slightly */
+        }
+
+        .dev-footer-text {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            line-height: 1.2; /* Tighter line spacing */
+        }
+
+        .dev-footer-text .light-text {
+            font-size: 6.5px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dev-footer-text .bold-text {
+            font-size: 8.5px;
+            color: #1b3b22;
+            font-weight: 800;
+        }

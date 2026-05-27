@@ -3,7 +3,7 @@ const timeInSound = new Audio('assets/spelling-bee.mp3');
         const errorSound = new Audio('assets/perfect-fart.mp3');
 
 
-
+    
         // Fetch dynamic admins periodically or once on load
         async function fetchAdminRfids() {
             try {

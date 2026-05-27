@@ -70,6 +70,40 @@
                 }
             });
 
+            // Setup hack for CUSTOM option re-clicking
+            ['deptFilterLogs', 'deptFilterSummary'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    // Add a hidden dummy option
+                    const dummy = document.createElement('option');
+                    dummy.value = 'DUMMY';
+                    dummy.style.display = 'none';
+                    el.appendChild(dummy);
+
+                    el.addEventListener('mousedown', function() {
+                        if (this.value === 'CUSTOM') {
+                            this.dataset.prev = 'CUSTOM';
+                            this.value = 'DUMMY'; // Temporarily change value
+                        } else {
+                            this.dataset.prev = this.value;
+                        }
+                    });
+                    
+                    // If they close the dropdown without making a selection, blur will restore it
+                    el.addEventListener('blur', function() {
+                        if (this.value === 'DUMMY') {
+                            this.value = this.dataset.prev || 'ALL';
+                        }
+                    });
+
+                    el.addEventListener('change', function() {
+                        if (this.value === 'DUMMY') {
+                            this.value = this.dataset.prev;
+                        }
+                    });
+                }
+            });
+
             // 2. Pre-load the Logo for the PDF
             try {
                 const logoImg = document.getElementById('sidebarLogo'); 
@@ -429,7 +463,8 @@ const start = document.getElementById('logStart').value;
                     contact: contactHTML, // 🌟 Save it in the session object
                     timeIn: timeStr,
                     timeOut: '<span style="color: #d63031;">Still inside or Did not Time out</span>',
-                    date: dateStr
+                    date: dateStr,
+                    userType: String(log.user_type).toUpperCase()
                 };
                 pairedSessions.push(newVisit);
                 activeSessions[studentKey] = newVisit;
@@ -445,14 +480,23 @@ const start = document.getElementById('logStart').value;
                         contact: contactHTML, // 🌟 Save it here too
                         timeIn: '---',
                         timeOut: timeStr,
-                        date: dateStr
+                        date: dateStr,
+                        userType: String(log.user_type).toUpperCase()
                     });
                 }
             }
         });
 
         // 🌟 BUILD THE HTML ROWS
+        let hasStudent = false;
+        let hasFaculty = false;
+        let hasVisitor = false;
+
         pairedSessions.forEach(s => {
+            if (s.userType === 'FACULTY') hasFaculty = true;
+            else if (s.userType === 'VISITOR') hasVisitor = true;
+            else hasStudent = true;
+
             fullTableRows += `<tr>
                 <td style="padding: 10px; border: 1px solid #d1e8d8;">
                     <div style="font-weight: 800; color: #2d4da3; font-size: 14px;">${s.name}</div>
@@ -472,15 +516,17 @@ const start = document.getElementById('logStart').value;
         }
 
         const imageTag = base64Logo ? `<img src="${base64Logo}" width="80" height="80" style="margin-bottom: 10px; object-fit: contain;">` : '';
-        // 🌟 THE FIX: Decide the column title based on what department is selected
-        let infoHeader = selectedDept === 'VISITOR' 
-            ? 'Visitor Information' 
-            : (selectedDept === 'ALL' ? 'Student & Visitor Information' : 'Student Information');   
-            
+        
+        // 🌟 THE FIX: Decide the column title based on the actual data to be printed
+        let infoHeader = 'Student Information';
+        if (hasStudent && !hasFaculty && !hasVisitor) infoHeader = 'Student Information';
+        else if (!hasStudent && hasFaculty && !hasVisitor) infoHeader = 'Faculty Information';
+        else if (!hasStudent && !hasFaculty && hasVisitor) infoHeader = 'Visitor Information';
+        else infoHeader = 'Student/Faculty/Visitor Information';
+
         let displayDept = selectedDept;
         if (selectedDept === 'CUSTOM') {
             displayDept = activeCustomFilters.join(', ') || 'Custom Selection';
-            infoHeader = 'Student & Visitor Information';
         }
             
         const reportHTML = `
